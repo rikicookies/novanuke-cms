@@ -265,7 +265,7 @@ Unit tests cover:
 - No real MySQL migration run from this checkout.
 - No runtime browser smoke test was run.
 - No automated accessibility test was found.
-- A committed CI workflow now exists at `.github/workflows/ci.yml`; local underlying gates pass, but GitHub-hosted execution remains pending.
+- A committed CI workflow exists at `.github/workflows/ci.yml` and is verified by successful GitHub Actions execution on 2026-09-30.
 
 ## G. Module / Theme Findings
 
@@ -359,7 +359,7 @@ Risks:
 - Theme markup and navigation are duplicated across bundled themes.
 - Some modules have weaker documentation than the Core.
 - Runtime Twig cache exists locally, though it is correctly ignored.
-- A repository-level CI definition now exists at `.github/workflows/ci.yml`; GitHub-hosted execution remains pending.
+- A repository-level CI definition exists at `.github/workflows/ci.yml`; GitHub-hosted execution is verified by run `36776262772` on 2026-09-30.
 - Test configuration is treated as local ignored state rather than committed project configuration.
 
 ## J. Documentation Mismatches
@@ -387,13 +387,13 @@ No confirmed P0 issue found.
 - P1 — PHPUnit configuration is missing: RESOLVED + VERIFIED. `composer test` passed with 33 tests and 107 assertions.
 - P2 — Module installation failure recovery and theme asset rollback coverage: RESOLVED + VERIFIED. `ThemeAssetPublisherRollbackTest` passed with 3 tests and 14 assertions; `ModuleInstallationRecoveryTest` passed with 1 test and 9 assertions; full unit and integration suites also passed.
 - P1 — Fresh-install and migration validation: RESOLVED + VERIFIED. `InstallerFreshInstallIntegrationTest` exercises the real `InstallerService` against an isolated empty MySQL database and temporary application root; focused validation passed with 1 test and 33 assertions, and the full integration suite passed with 52 tests and 1016 assertions.
-- P1 — Missing committed CI workflow: IMPLEMENTED / LOCAL VALIDATION PASSED / GITHUB EXECUTION PENDING. `.github/workflows/ci.yml` targets PHP 8.3, installs from `composer.lock`, runs syntax/unit/i18n/release/smoke/theme gates, and runs the existing integration runner against an isolated health-checked MySQL service using the existing disposable-database environment contract. Do not mark RESOLVED + VERIFIED until GitHub Actions executes successfully.
+- P1 — Missing committed CI workflow: RESOLVED + VERIFIED. GitHub repository `rikicookies/novanuke-cms` run `36776262772` succeeded on 2026-09-30 at commit `315b911028d281e6d959421c91aee868bd9c437b`; both the PHP 8.3 quality-gates job and PHP 8.3 MySQL-integration job passed. The workflow installs locked Composer dependencies, runs syntax/unit/i18n/release/smoke/theme gates, and exercises the disposable MySQL integration contract.
 
 ### P1 — Before next release
 
 1. Restore or replace `tests/run-integration.php` (RESOLVED + VERIFIED).
 2. Commit PHPUnit configuration and make `composer test` execute the intended unit suite (RESOLVED + VERIFIED).
-3. Add CI that runs syntax lint, unit tests, release checks, i18n checks, and safe static checks (IMPLEMENTED / LOCAL VALIDATION PASSED / GITHUB EXECUTION PENDING).
+3. Add CI that runs syntax lint, unit tests, release checks, i18n checks, and safe static checks (RESOLVED + VERIFIED; GitHub Actions run `36776262772` passed on 2026-09-30).
 4. Execute fresh-install and migration tests against disposable MySQL/MariaDB databases (RESOLVED + VERIFIED).
 5. Require production readiness checks before deployment, including HTTPS, secure cookies, debug disabled, mail configuration, and migration status.
 
