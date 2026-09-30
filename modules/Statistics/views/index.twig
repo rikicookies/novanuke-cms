@@ -1,0 +1,21 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('statistics::public.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="statistics-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('common.home'), url: '/'}, {label: trans('statistics::navigation.label')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('statistics::public.eyebrow'), title: trans('statistics::public.title'), description: trans('statistics::public.description')} only %}
+    <div class="stat-grid">
+        <article><strong>{{ summary.registered_users }}</strong><span>{{ trans('statistics::metric.registered_users') }}</span></article>
+        <article><strong>{{ summary.published_news }}</strong><span>{{ trans('statistics::metric.published_news') }}</span></article>
+        <article><strong>{{ summary.approved_comments }}</strong><span>{{ trans('statistics::metric.approved_comments') }}</span></article>
+        <article><strong>{{ summary.downloads }}</strong><span>{{ trans('statistics::metric.downloads') }}</span></article>
+        <article><strong>{{ summary.views_30_days }}</strong><span>{{ trans('statistics::metric.views_30_days') }}</span></article>
+    </div>
+    <section class="module-section">
+        <div class="module-section-heading"><div><h2>{{ trans('statistics::public.popular_sections') }}</h2><p>{{ trans('statistics::public.privacy_help') }}</p></div></div>
+        {% if sections %}
+        <div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('statistics::table.section') }}</th><th>{{ trans('statistics::table.views') }}</th></tr></thead><tbody>{% for item in sections %}<tr><td>{{ item.section }}</td><td>{{ item.views }}</td></tr>{% endfor %}</tbody></table></div>
+        {% else %}{% include 'components/empty-state.twig' with {title: trans('statistics::empty.title'), message: trans('statistics::empty.message')} only %}{% endif %}
+    </section>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ page.title }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="canonical" href="{{ cms_url }}/wiki/{{ page.path }}"><link rel="stylesheet" href="/wiki-assets/wiki.css">{% if page.audience != 'public' %}<meta name="robots" content="noindex,nofollow">{% endif %}{% endblock %}
+{% block content %}
+<nav class="content-breadcrumbs" aria-label="{{ trans('wiki::breadcrumb') }}"><ol>{% for item in breadcrumbs %}<li>{% if item.url %}<a href="{{ item.url }}">{{ item.label }}</a>{% else %}<span aria-current="page">{{ item.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>
+<div class="wiki-toolbar"><a class="content-action" href="/wiki">{{ trans('wiki::action.return') }}</a><a class="content-action" href="/wiki/search">{{ trans('wiki::action.search') }}</a><a class="content-action" href="/wiki/map">{{ trans('wiki::action.map') }}</a>{% if edit_url %}<a class="content-action" href="{{ edit_url }}">{{ trans('wiki::action.edit') }}</a>{% endif %}</div>
+<div class="wiki-shell">
+    <main class="wiki-main">
+        <article class="content-page wiki-page">
+            <header><p class="eyebrow wiki-path">{{ page.path }}</p><h1>{{ page.title }}</h1><div class="wiki-page-meta"><small>{{ trans('wiki::page.updated', {date: page.updated_at|date(cms_date_format, cms_timezone), author: page.username}) }}</small>{% if page.audience != 'public' %}<small>· {{ page.audience == 'vip' ? trans('wiki::audience.vip') : trans('wiki::audience.members') }}</small>{% endif %}</div></header>
+            <div class="article-content wiki-reading">{{ page.content_html }}</div>
+        </article>
+        {% if comments_available %}{% include '@comments/thread.twig' with {content_type:'wiki',content_id:page.id,comments:comments,guests_allowed:comments_guests_allowed,csrf_token:comments_csrf_token,return_to:comments_return_to,message:comments_message,error:comments_error,current_user:comments_user} only %}{% elseif page.comments_enabled|default(0) %}<p class="comments-unavailable">{{ trans('wiki::comments_unavailable') }}</p>{% endif %}
+    </main>
+    {% if attachments or backlinks %}<aside class="wiki-sidebar" aria-label="{{ trans('wiki::page.resources') }}">
+        {% if attachments %}<section class="wiki-panel wiki-attachments"><h2>{{ trans('wiki::attachments.title') }}</h2><ul class="wiki-attachments-list">{% for attachment in attachments %}<li><a href="/wiki/attachments/{{ attachment.id }}">{{ attachment.original_name }}</a><br><small>{{ trans('wiki::attachments.size', {size: attachment.file_size}) }}</small></li>{% endfor %}</ul></section>{% endif %}
+        {% if backlinks %}<section class="wiki-panel"><h2>{{ trans('wiki::backlinks.title') }}</h2><ul>{% for backlink in backlinks %}<li><a href="/wiki/{{ backlink.path }}">{{ backlink.title }}</a><br><small class="wiki-path">{{ backlink.path }}</small></li>{% endfor %}</ul></section>{% endif %}
+    </aside>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="{{ old.locale|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{% block title %}{{ trans('installer.title') }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/installer.css">
+</head>
+<body>
+    <main class="installer-shell">
+        <header class="installer-header">
+            <span class="logo">NovaNuke</span>
+            <span class="version">{{ cms_version }}</span>
+        </header>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

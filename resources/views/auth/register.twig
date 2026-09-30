@@ -1,0 +1,19 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.register.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.register.eyebrow') }}</p>
+    <h1>{{ trans('auth.register.heading') }}</h1>
+    <p>{{ trans(verification_required ? 'auth.register.verification_required' : 'auth.register.active_immediately') }}</p>
+    {% if errors %}<div class="form-errors"><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+    <form method="post" action="/register">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('auth.register.username') }}<input name="username" value="{{ old.username|default('') }}" minlength="3" maxlength="32" required autocomplete="username"></label>
+        <label>{{ trans('common.email') }}<input type="email" name="email" value="{{ old.email|default('') }}" required autocomplete="email"></label>
+        <label>{{ trans('common.password') }}<input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+        <label>{{ trans('auth.register.confirm_password') }}<input type="password" name="password_confirmation" minlength="12" required autocomplete="new-password"></label>
+        <button type="submit">{{ trans('common.create_account') }}</button>
+        <a class="auth-link" href="/login">{{ trans('auth.register.already') }}</a>
+    </form>
+</section>
+{% endblock %}

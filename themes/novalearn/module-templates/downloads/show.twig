@@ -1,0 +1,24 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ download.name }} — {{ trans('downloads::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<article class="nl-download-detail">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('downloads::title'), url: '/downloads'}, {label: download.name}]} only %}
+  {% if message %}<div class="success-message">{{ message }}</div>{% endif %}{% if error %}<div class="form-errors"><p>{{ error }}</p></div>{% endif %}
+  <header class="nl-download-detail-header">
+    <div class="nl-download-detail-title"><div class="nl-kicker">{% if download.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('downloads::featured') }}</span>{% endif %}<span class="nl-category-pill">{{ download.category_name|default(trans('downloads::uncategorized'), true) }}</span></div><h1>{{ download.name }}</h1><p>{{ trans('downloads::count', {count: download.download_count}) }}</p></div>
+    {% include 'components/content-actions.twig' with {edit_url: edit_url|default(null), delete_url: delete_url|default(null), csrf_token: content_csrf_token|default(null), return_to: delete_return_to|default(null)} only %}
+  </header>
+
+  <div class="nl-download-detail-hero">
+    <div class="nl-download-detail-media">{% if download.image_path %}<img src="{{ download.image_path }}" alt="">{% else %}<div class="nl-package-art nl-package-art-large"><span>↓</span></div>{% endif %}</div>
+    <div class="nl-download-summary-card">
+      <dl><div><dt>{{ trans('downloads::version') }}</dt><dd>{{ download.version|default('—', true) }}</dd></div><div><dt>{{ trans('downloads::author') }}</dt><dd>{{ download.author_name|default('—', true) }}</dd></div><div><dt>{{ trans('downloads::license') }}</dt><dd>{{ download.license_name|default('—', true) }}</dd></div><div><dt>{{ trans('downloads::size') }}</dt><dd>{{ download.file_size ? (download.file_size / 1048576)|number_format(2) ~ ' MB' : trans('downloads::external_file') }}</dd></div></dl>
+      <a class="nl-download-cta" href="/downloads/{{ download.slug }}/get"{% if download.source_type == 'external' %} target="_blank" rel="noopener noreferrer external"{% endif %}><span>↓</span>{{ trans('downloads::download') }}</a>
+    </div>
+  </div>
+
+  <section class="nl-download-description article-content">{{ download.description_html }}</section>
+  {% if download.requirements_html|default('') %}<section class="nl-download-requirements"><h2>{{ trans('downloads::requirements') }}</h2><div class="article-content">{{ download.requirements_html }}</div></section>{% endif %}
+  <footer class="nl-download-detail-footer"><details class="nl-download-report"><summary>{{ trans('downloads::report') }}</summary><form method="post" action="/downloads/{{ download.id }}/report"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="slug" value="{{ download.slug }}"><label>{{ trans('downloads::reason') }}<textarea name="reason" required minlength="5" maxlength="500"></textarea></label><button type="submit">{{ trans('downloads::send_report') }}</button></form></details><a href="/downloads">← {{ trans('downloads::return') }}</a></footer>
+</article>
+{% endblock %}

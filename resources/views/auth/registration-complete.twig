@@ -1,0 +1,15 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Account created — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.registration_complete.eyebrow') }}</p>
+    <h1>{{ trans('auth.registration_complete.title', {site_name: cms_name|default('NovaNuke')}) }}</h1>
+    {% if verification_required %}
+        <p>{{ trans('auth.registration_complete.verify') }}</p>
+        <a class="auth-link" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>
+    {% else %}
+        <p>{{ trans('auth.registration_complete.active') }}</p>
+        <a class="install-button link-button" href="/login">{{ trans('common.sign_in') }}</a>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('comments::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-comments-admin">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('comments::title')}]} only %}
+
+  <div class="nn-page-head nn-comments-head">
+    <div>
+      <div class="nn-page-eyebrow">{{ trans('comments::eyebrow') }}</div>
+      <h1>{{ trans('comments::title') }}</h1>
+      <p>{{ trans('comments::admin.description') }}</p>
+    </div>
+    <a class="btn btn-light nn-btn-compact" href="/admin/system"><i class="ph ph-activity"></i>{{ trans('admin.system.title') }}</a>
+  </div>
+
+  {% if message %}<div class="nn-alert nn-alert-success"><i class="ph ph-check-circle"></i><div>{{ message }}</div></div>{% endif %}
+  {% if error %}<div class="nn-alert nn-alert-danger"><i class="ph ph-warning-circle"></i><div>{{ error }}</div></div>{% endif %}
+
+  <div class="nn-comments-stats">
+    <article class="nn-stat-card"><span class="nn-stat-icon is-blue"><i class="ph ph-chats-circle"></i></span><div><span>{{ trans('comments::admin.queue_count') }}</span><strong>{{ queue|length }}</strong><small>{{ trans('comments::admin.queue_count_help') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-red"><i class="ph ph-flag"></i></span><div><span>{{ trans('comments::admin.report_count') }}</span><strong>{{ reports|length }}</strong><small>{{ trans('comments::admin.report_count_help') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-violet"><i class="ph ph-user-circle"></i></span><div><span>{{ trans('comments::admin.guests_status') }}</span><strong class="nn-stat-state {{ guests_allowed ? 'is-on' : 'is-off' }}">{{ guests_allowed ? trans('comments::admin.enabled') : trans('comments::admin.disabled') }}</strong><small>{{ trans('comments::admin.guest_comments_help') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-amber"><i class="ph ph-shield-check"></i></span><div><span>{{ trans('comments::admin.moderation_status') }}</span><strong class="nn-stat-state {{ moderation_required ? 'is-on' : 'is-off' }}">{{ moderation_required ? trans('comments::admin.enabled') : trans('comments::admin.disabled') }}</strong><small>{{ trans('comments::admin.require_moderation_help') }}</small></div></article>
+  </div>
+
+  <div class="nn-comments-layout">
+    <div class="nn-comments-main">
+      <section class="nn-panel nn-comments-panel">
+        <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('comments::admin.review') }}</span><h2>{{ trans('comments::admin.queue') }}</h2><p>{{ trans('comments::admin.queue_help') }}</p></div><span class="nn-count-pill">{{ queue|length }}</span></header>
+        <div class="nn-comments-list">
+          {% for comment in queue %}
+            <article class="nn-comment-review">
+              <div class="nn-comment-avatar">{{ comment.author|slice(0,1)|upper }}</div>
+              <div class="nn-comment-body">
+                <div class="nn-comment-meta"><strong>{{ comment.author }}</strong><span>•</span><span>{{ comment.created_at }}</span><span class="nn-status-pill is-{{ comment.status }}">{{ attribute({'approved':trans('comments::admin.status.approved'),'pending':trans('comments::admin.status.pending'),'spam':trans('comments::admin.status.spam'),'deleted':trans('comments::admin.status.deleted')}, comment.status)|default(comment.status) }}</span>{% if comment.open_reports > 0 %}<span class="nn-report-pill"><i class="ph ph-flag"></i>{{ comment.open_reports }}</span>{% endif %}</div>
+                <p class="nn-comment-copy">{{ comment.body }}</p>
+                <div class="nn-comment-foot"><span><i class="ph ph-link-simple"></i>{{ comment.content_type }} #{{ comment.content_id }}</span><span>#{{ comment.id }}</span></div>
+              </div>
+              <form class="nn-comment-action" method="post" action="/admin/comments/{{ comment.id }}/moderate">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <select name="status" aria-label="{{ trans('comments::admin.status') }}">
+                  <option value="approved" {{ comment.status == 'approved' ? 'selected' : '' }}>{{ trans('comments::admin.status.approved') }}</option>
+                  <option value="pending" {{ comment.status == 'pending' ? 'selected' : '' }}>{{ trans('comments::admin.status.pending') }}</option>
+                  <option value="spam" {{ comment.status == 'spam' ? 'selected' : '' }}>{{ trans('comments::admin.status.spam') }}</option>
+                  <option value="deleted">{{ trans('comments::admin.status.deleted') }}</option>
+                </select>
+                <button class="btn btn-primary nn-btn-compact" type="submit">{{ trans('comments::admin.apply') }}</button>
+              </form>
+            </article>
+          {% else %}
+            <div class="nn-empty-state"><span><i class="ph ph-check-circle"></i></span><h3>{{ trans('comments::admin.queue_empty') }}</h3><p>{{ trans('comments::admin.queue_empty_help') }}</p></div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="nn-panel nn-comments-panel">
+        <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('comments::admin.report_details') }}</span><h2>{{ trans('comments::admin.open_reports') }}</h2><p>{{ trans('comments::admin.reports_help') }}</p></div><span class="nn-count-pill {{ reports|length > 0 ? 'is-danger' : '' }}">{{ reports|length }}</span></header>
+        <div class="nn-report-list">
+          {% for report in reports %}
+            <article class="nn-report-row">
+              <span class="nn-report-icon"><i class="ph ph-warning"></i></span>
+              <div class="nn-report-content"><div class="nn-comment-meta"><strong>{{ trans('comments::admin.comment_id') }}{{ report.comment_id }}</strong><span>•</span><span>{{ report.created_at }}</span></div><p>{{ report.body }}</p><div class="nn-report-reason"><strong>{{ trans('comments::reason') }}:</strong> {{ report.reason }} <span>— {{ trans('comments::admin.reporter') }}: {{ report.reporter }}</span></div></div>
+              <form method="post" action="/admin/comment-reports/{{ report.id }}/resolve"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="btn btn-light nn-btn-compact" type="submit"><i class="ph ph-check"></i>{{ trans('comments::admin.resolve') }}</button></form>
+            </article>
+          {% else %}
+            <div class="nn-empty-state is-compact"><span><i class="ph ph-shield-check"></i></span><h3>{{ trans('comments::admin.no_reports') }}</h3><p>{{ trans('comments::admin.no_reports_help') }}</p></div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <aside class="nn-comments-side">
+      <form class="nn-panel nn-policy-card" method="post" action="/admin/comments/settings">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <header><span class="nn-panel-kicker">{{ trans('comments::admin.overview') }}</span><h2>{{ trans('comments::admin.policy') }}</h2><p>{{ trans('comments::admin.policy_help') }}</p></header>
+        <label class="nn-setting-toggle"><span><strong>{{ trans('comments::admin.guest_comments') }}</strong><small>{{ trans('comments::admin.guest_comments_help') }}</small></span><input type="checkbox" name="guests_allowed" value="1" {{ guests_allowed ? 'checked' : '' }}><i></i></label>
+        <label class="nn-setting-toggle"><span><strong>{{ trans('comments::admin.require_moderation') }}</strong><small>{{ trans('comments::admin.require_moderation_help') }}</small></span><input type="checkbox" name="moderation_required" value="1" {{ moderation_required ? 'checked' : '' }}><i></i></label>
+        <div class="nn-policy-note"><i class="ph ph-info"></i><span>{{ trans('comments::admin.policy_saved_hint') }}</span></div>
+        <button class="btn btn-primary w-100" type="submit"><i class="ph ph-floppy-disk"></i>{{ trans('comments::admin.save_policy') }}</button>
+      </form>
+    </aside>
+  </div>
+</section>
+{% endblock %}

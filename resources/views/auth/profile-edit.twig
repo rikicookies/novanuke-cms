@@ -1,0 +1,64 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.profile.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="dashboard-card account-profile">
+    <p class="eyebrow">{{ trans('account.settings') }}</p>
+    <h1>{{ trans('account.profile.title') }}</h1>
+    {% if current_user.must_change_password|default(false) %}<div class="alert alert-warning">{{ trans('account.profile.must_change_password') }}</div>{% endif %}
+    {% include "auth/_social-nav.twig" %}
+    {% if message|default(null) %}<div class="alert alert-success">{{ message }}</div>{% endif %}
+    {% if profile.username|default('') %}<p><a href="/users/{{ profile.username|default('') }}">{{ trans('account.profile.public') }}</a></p>{% endif %}
+    <p><a href="/account/security">{{ trans('account.security.link') }}</a></p>
+    {% if membership.vip|default(false) %}
+    <div class="alert alert-success">
+        <strong>{{ trans('account.membership.active', {name: membership.name|default(trans('profile.vip'))}) }}</strong>
+        {% if membership.lifetime|default(false) %}{{ trans('account.membership.lifetime') }}
+        {% else %}{{ trans('account.membership.expires', {date: membership.expires_at|date(cms_date_format ~ ' H:i', cms_timezone)}) }}{% endif %}
+    </div>
+    {% else %}
+    <div class="notice-message"><strong>{{ trans('account.membership.free') }}</strong> {{ trans('account.membership.free_help') }}</div>
+    {% endif %}
+    {% if scheduled_membership|default(null) %}
+    <div class="notice-message">
+        <strong>{{ trans('account.membership.scheduled', {name: scheduled_membership.name|default(trans('profile.vip'))}) }}</strong>
+        {{ trans('account.membership.starts', {date: scheduled_membership.starts_at|date(cms_date_format ~ ' H:i', cms_timezone)}) }}
+        {% if scheduled_membership.lifetime|default(false) %}{{ trans('account.membership.lifetime_after') }}
+        {% elseif scheduled_membership.expires_at|default(null) %}{{ trans('account.membership.ends', {date: scheduled_membership.expires_at|date(cms_date_format ~ ' H:i', cms_timezone)}) }}{% endif %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/account/profile" class="settings-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('account.profile.display_name') }}<input name="display_name" value="{{ profile.display_name|default('') }}" minlength="2" maxlength="100" required>{% if errors.display_name|default(null) %}<small class="field-error">{{ errors.display_name }}</small>{% endif %}</label>
+        <label>{{ trans('account.profile.bio_format') }}<select name="bio_format"><option value="markdown" {{ profile.bio_format|default('markdown') == 'markdown' ? 'selected' : '' }}>{{ trans('account.profile.markdown') }}</option><option value="html" {{ profile.bio_format|default('markdown') == 'html' ? 'selected' : '' }}>{{ trans('account.profile.sanitized_html') }}</option></select>{% if errors.bio_format|default(null) %}<small class="field-error">{{ errors.bio_format }}</small>{% endif %}</label>
+        <label>{{ trans('account.profile.bio') }}<textarea name="bio" rows="6" maxlength="2000">{{ profile.bio|default('') }}</textarea><small>{{ trans('account.profile.bio_help') }}</small>{% if errors.bio|default(null) %}<small class="field-error">{{ errors.bio }}</small>{% endif %}</label>
+        <label>{{ trans('account.profile.website') }}<input type="url" name="website" maxlength="255" placeholder="https://example.com" value="{{ profile.website|default('') }}">{% if errors.website|default(null) %}<small class="field-error">{{ errors.website }}</small>{% endif %}</label>
+        <label>{{ trans('account.profile.location') }}<input name="location" maxlength="120" value="{{ profile.location|default('') }}">{% if errors.location|default(null) %}<small class="field-error">{{ errors.location }}</small>{% endif %}</label>
+        <div class="form-grid">
+            <label>{{ trans('account.profile.language') }}<select name="locale">{% for code, label in cms_locales %}<option value="{{ code }}"{% if profile.locale|default('en') == code %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>{{ trans('account.profile.timezone') }}<select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}"{% if profile.timezone|default('UTC') == timezone %} selected{% endif %}>{{ timezone }}</option>{% endfor %}</select></label>
+            <label>{{ trans('account.profile.visibility') }}<select name="profile_visibility"><option value="public"{% if profile.profile_visibility|default('public') == 'public' %} selected{% endif %}>{{ trans('account.profile.visibility_public') }}</option><option value="members"{% if profile.profile_visibility|default('public') == 'members' %} selected{% endif %}>{{ trans('account.profile.visibility_members') }}</option></select></label>
+        </div>
+        <button type="submit">{{ trans('account.profile.save') }}</button>
+    </form>
+
+    <h2>{{ trans('account.avatar.title') }}</h2>
+    {% if profile.avatar_path|default(null) %}<img class="profile-avatar" src="{{ profile.avatar_path }}" alt=""><form method="post" action="/account/avatar/remove"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">{{ trans('account.avatar.remove') }}</button></form>{% endif %}
+    {% if avatar_error|default(null) %}<div class="alert alert-error">{{ avatar_error }}</div>{% endif %}
+    <form method="post" action="/account/avatar" enctype="multipart/form-data" class="settings-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('account.avatar.title') }}<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" required><small>{{ trans('account.avatar.help') }}</small></label>
+        <button type="submit">{{ trans('account.avatar.save') }}</button>
+    </form>
+
+    <h2>{{ trans('account.password.title') }}</h2>
+    {% if password_error|default(null) %}<div class="alert alert-error">{{ password_error }}</div>{% endif %}
+    <form method="post" action="/account/password" class="settings-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('account.password.current') }}<input type="password" name="current_password" required autocomplete="current-password"></label>
+        <label>{{ trans('account.password.new') }}<input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
+        <label>{{ trans('auth.register.confirm_password') }}<input type="password" name="password_confirmation" minlength="12" required autocomplete="new-password"></label>
+        <button type="submit">{{ trans('account.password.save') }}</button>
+    </form>
+</section>
+{% endblock %}

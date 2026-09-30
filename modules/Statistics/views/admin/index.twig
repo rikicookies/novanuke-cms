@@ -1,0 +1,83 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('statistics::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-statistics-admin">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('statistics::navigation.label')}]} only %}
+
+  <header class="nn-statistics-head">
+    <div><span class="nn-page-eyebrow">{{ trans('statistics::admin.eyebrow') }}</span><h1>{{ trans('statistics::navigation.label') }}</h1><p>{{ trans('statistics::admin.description') }}</p></div>
+    <a class="btn btn-light nn-btn-compact" href="/statistics"><i class="ph ph-arrow-square-out"></i>{{ trans('statistics::admin.view_public') }}</a>
+  </header>
+
+  {% if message %}<div class="nn-alert nn-alert-success"><i class="ph ph-check-circle"></i><div>{{ message }}</div></div>{% endif %}
+
+  <div class="nn-statistics-metrics">
+    <article class="nn-stat-card"><span class="nn-stat-icon is-blue"><i class="ph ph-users-three"></i></span><div><span>{{ trans('statistics::metric.registered_users') }}</span><strong>{{ summary.registered_users }}</strong><small>{{ trans('statistics::metric.active_users') }}: {{ summary.active_users }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-green"><i class="ph ph-eye"></i></span><div><span>{{ trans('statistics::metric.views_30_days') }}</span><strong>{{ summary.views_30_days }}</strong><small>{{ trans('statistics::admin.last_30_days') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-violet"><i class="ph ph-newspaper"></i></span><div><span>{{ trans('statistics::metric.published_news') }}</span><strong>{{ summary.published_news }}</strong><small>{{ trans('statistics::metric.approved_comments') }}: {{ summary.approved_comments }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-amber"><i class="ph ph-download-simple"></i></span><div><span>{{ trans('statistics::metric.downloads') }}</span><strong>{{ summary.downloads }}</strong><small>{{ trans('statistics::admin.content_performance') }}</small></div></article>
+  </div>
+
+  <div class="nn-statistics-topgrid">
+    <section class="nn-panel nn-statistics-trend">
+      <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('statistics::admin.last_14_days') }}</span><h2>{{ trans('statistics::admin.trend') }}</h2><p>{{ trans('statistics::admin.trend_help') }}</p></div><span class="nn-count-pill">{{ trends|length }}</span></header>
+      {% if trends %}
+      {% set max_views = 1 %}
+      {% for point in trends %}{% if point.views > max_views %}{% set max_views = point.views %}{% endif %}{% endfor %}
+      <div class="nn-trend-bars" style="--nn-trend-columns:{{ trends|length }}">
+        {% for point in trends %}
+        {% set bar_height = point.views > 0 ? ((point.views / max_views) * 100)|round : 2 %}
+        <div class="nn-trend-day" title="{{ point.statistic_date }} · {{ point.views }} {{ trans('statistics::admin.views') }}"><strong>{{ point.views }}</strong><span class="nn-trend-bar" style="--nn-bar:{{ bar_height }}%"></span><small>{{ point.statistic_date|slice(5,5) }}</small></div>
+        {% endfor %}
+      </div>
+      {% else %}<div class="nn-statistics-empty"><i class="ph ph-chart-bar"></i><strong>{{ trans('statistics::admin.no_trend') }}</strong><span>{{ trans('statistics::admin.no_trend_help') }}</span></div>{% endif %}
+    </section>
+
+    {% if can_manage %}
+    <section class="nn-panel nn-statistics-privacy">
+      <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('statistics::admin.quick_status') }}</span><h2>{{ trans('statistics::admin.privacy') }}</h2><p>{{ trans('statistics::admin.privacy_help') }}</p></div></header>
+      <form method="post" action="/admin/statistics/settings" class="nn-statistics-settings">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="nn-statistics-toggle"><div><strong>{{ trans('statistics::admin.collect') }}</strong><span>{{ trans('statistics::admin.collect_help') }}</span></div><input type="checkbox" name="collection_enabled" value="1" {{ collection_enabled ? 'checked' : '' }}><i aria-hidden="true"></i></label>
+        <label class="nn-statistics-toggle"><div><strong>{{ trans('statistics::admin.public') }}</strong><span>{{ trans('statistics::admin.public_help') }}</span></div><input type="checkbox" name="public_enabled" value="1" {{ public_enabled ? 'checked' : '' }}><i aria-hidden="true"></i></label>
+        <div class="nn-statistics-status"><span class="nn-status-badge {{ collection_enabled ? 'is-active' : 'is-muted' }}"><i class="ph ph-database"></i>{{ collection_enabled ? trans('statistics::admin.collection_on') : trans('statistics::admin.collection_off') }}</span><span class="nn-status-badge {{ public_enabled ? 'is-active' : 'is-muted' }}"><i class="ph ph-globe"></i>{{ public_enabled ? trans('statistics::admin.public_on') : trans('statistics::admin.public_off') }}</span></div>
+        <button class="btn btn-primary nn-btn-compact" type="submit"><i class="ph ph-floppy-disk"></i>{{ trans('statistics::admin.save') }}</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+
+  <section class="nn-panel nn-statistics-breakdowns">
+    <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('statistics::admin.last_30_days') }}</span><h2>{{ trans('statistics::admin.breakdowns') }}</h2><p>{{ trans('statistics::admin.breakdowns_help') }}</p></div></header>
+    <div class="nn-breakdown-grid">
+      {% set breakdowns = [
+        {title: trans('statistics::admin.sections'), icon:'ph-layout', rows:sections, label:'section'},
+        {title: trans('statistics::admin.referrers'), icon:'ph-link-simple', rows:referrers, label:'referrer_host'},
+        {title: trans('statistics::admin.devices'), icon:'ph-device-mobile', rows:devices, label:'device_type'},
+        {title: trans('statistics::admin.browsers'), icon:'ph-browser', rows:browsers, label:'browser_type'}
+      ] %}
+      {% for box in breakdowns %}
+      <article class="nn-breakdown-card"><header><span class="nn-stat-icon is-blue"><i class="ph {{ box.icon }}"></i></span><h3>{{ box.title }}</h3></header>
+        {% if box.rows %}<div class="nn-breakdown-list">{% for item in box.rows|slice(0,6) %}<div><span>{{ attribute(item,box.label)|default(trans('statistics::admin.no_value'),true) }}</span><strong>{{ item.views }}</strong></div>{% endfor %}</div>{% else %}<p class="nn-breakdown-empty">{{ trans('statistics::empty.breakdown') }}</p>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="nn-statistics-bottomgrid">
+    <section class="nn-panel nn-statistics-content">
+      <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('statistics::admin.views') }}</span><h2>{{ trans('statistics::admin.content_performance') }}</h2><p>{{ trans('statistics::admin.content_performance_help') }}</p></div></header>
+      <div class="nn-content-performance">
+      {% for type,items in top %}{% set type_label = trans('statistics::admin.content_type.' ~ type) %}
+        <div class="nn-content-group"><h3>{{ type_label }}</h3>{% if items %}{% for item in items|slice(0,5) %}<div class="nn-content-row"><span>{{ item.title }}</span><strong>{{ item.views }}</strong></div>{% endfor %}{% else %}<p>{{ trans('statistics::admin.content_empty', {type:type_label}) }}</p>{% endif %}</div>
+      {% endfor %}
+      </div>
+    </section>
+
+    <section class="nn-panel nn-statistics-activity">
+      <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('statistics::admin.recent_activity') }}</span><h2>{{ trans('statistics::admin.activity_stream') }}</h2><p>{{ trans('statistics::admin.activity_stream_help') }}</p></div></header>
+      {% if activity %}<div class="nn-activity-list">{% for item in activity|slice(0,10) %}<article><span class="nn-activity-icon"><i class="ph ph-activity"></i></span><div><strong>{{ item.username|default(trans('statistics::admin.system'),true) }}</strong><code>{{ item.action }}</code><small>{{ item.subject_type }}{% if item.subject_id %} #{{ item.subject_id }}{% endif %} · {{ item.created_at }}</small></div></article>{% endfor %}</div>{% else %}<div class="nn-statistics-empty"><i class="ph ph-clock-counter-clockwise"></i><strong>{{ trans('statistics::admin.activity_empty') }}</strong><span>{{ trans('statistics::admin.activity_empty_help') }}</span></div>{% endif %}
+    </section>
+  </div>
+</section>
+{% endblock %}

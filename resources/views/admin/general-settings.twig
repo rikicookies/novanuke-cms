@@ -1,0 +1,142 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('settings.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-settings-v2">
+    <div class="nn-breadcrumb"><i class="ph ph-house"></i><span>/</span><a href="/admin">{{ trans('admin.navigation.dashboard') }}</a><span>/</span><strong>{{ trans('settings.title') }}</strong></div>
+
+    <div class="nn-page-heading nn-settings-heading">
+        <div>
+            <h1>{{ trans('settings.title') }}</h1>
+            <p>{{ trans('settings.description') }}</p>
+        </div>
+        <a class="nn-button nn-button-secondary" href="/admin/system"><i class="ph ph-monitor"></i>{{ trans('settings.system_information') }}</a>
+    </div>
+
+    {% if saved %}<div class="nn-settings-alert is-success"><i class="ph ph-check-circle"></i><div><strong>{{ trans('settings.saved') }}</strong><span>{{ trans('settings.saved_help') }}</span></div></div>{% endif %}
+    {% if errors %}<div class="nn-settings-alert is-danger"><i class="ph ph-warning-circle"></i><div><strong>{{ trans('settings.review') }}</strong><span>{{ trans('settings.review_help') }}</span></div></div>{% endif %}
+
+    <form method="post" action="/admin/settings" class="nn-settings-layout">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <main class="nn-settings-main">
+            <section class="nn-settings-card">
+                <header><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-globe-hemisphere-west"></i></span><div><h2>{{ trans('settings.identity_title') }}</h2><p>{{ trans('settings.identity_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    <div class="nn-settings-field">
+                        <label for="settings-name">{{ trans('settings.site_name') }}</label>
+                        <input id="settings-name" name="name" value="{{ values.name|default('') }}" required minlength="2" maxlength="100">
+                        <small>{{ trans('settings.site_name_help') }}</small>
+                        {% if errors.name|default(null) %}<span class="field-error">{{ errors.name }}</span>{% endif %}
+                    </div>
+                    <div class="nn-settings-field">
+                        <label for="settings-description">{{ trans('settings.site_description') }}</label>
+                        <textarea id="settings-description" name="description" rows="3" maxlength="500">{{ values.description|default('') }}</textarea>
+                        <small>{{ trans('settings.site_description_help') }}</small>
+                        {% if errors.description|default(null) %}<span class="field-error">{{ errors.description }}</span>{% endif %}
+                    </div>
+                    <div class="nn-settings-grid">
+                        <div class="nn-settings-field">
+                            <label for="settings-url">{{ trans('settings.site_url') }}</label>
+                            <input id="settings-url" type="url" name="url" value="{{ values.url|default('') }}" required maxlength="2048" placeholder="https://example.com">
+                            <small>{{ trans('settings.site_url_help') }}</small>
+                            {% if errors.url|default(null) %}<span class="field-error">{{ errors.url }}</span>{% endif %}
+                        </div>
+                        <div class="nn-settings-field">
+                            <label for="settings-email">{{ trans('settings.admin_email') }}</label>
+                            <input id="settings-email" type="email" name="admin_email" value="{{ values.admin_email|default('') }}" required maxlength="254">
+                            <small>{{ trans('settings.admin_email_help') }}</small>
+                            {% if errors.admin_email|default(null) %}<span class="field-error">{{ errors.admin_email }}</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="nn-settings-card">
+                <header><span class="nn-soft-icon nn-soft-purple"><i class="ph ph-sliders-horizontal"></i></span><div><h2>{{ trans('settings.preferences_title') }}</h2><p>{{ trans('settings.preferences_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    <div class="nn-settings-grid">
+                        <div class="nn-settings-field"><label for="settings-locale">{{ trans('settings.language') }}</label><select id="settings-locale" name="locale">{% for code, label in cms_locales %}<option value="{{ code }}"{% if values.locale|default('en') == code %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% if errors.locale|default(null) %}<span class="field-error">{{ errors.locale }}</span>{% endif %}</div>
+                        <div class="nn-settings-field"><label for="settings-timezone">{{ trans('settings.timezone') }}</label><select id="settings-timezone" name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}"{% if values.timezone|default('UTC') == timezone %} selected{% endif %}>{{ timezone }}</option>{% endfor %}</select>{% if errors.timezone|default(null) %}<span class="field-error">{{ errors.timezone }}</span>{% endif %}</div>
+                        <div class="nn-settings-field"><label for="settings-date">{{ trans('settings.date_format') }}</label><select id="settings-date" name="date_format">{% for format, example in date_formats %}<option value="{{ format }}"{% if values.date_format|default('F j, Y') == format %} selected{% endif %}>{{ example }}</option>{% endfor %}</select>{% if errors.date_format|default(null) %}<span class="field-error">{{ errors.date_format }}</span>{% endif %}</div>
+                        <div class="nn-settings-field"><label for="settings-perpage">{{ trans('settings.per_page') }}</label><input id="settings-perpage" type="number" name="per_page" value="{{ values.per_page|default(10) }}" min="5" max="100" required>{% if errors.per_page|default(null) %}<span class="field-error">{{ errors.per_page }}</span>{% endif %}</div>
+                    </div>
+                    <div class="nn-settings-field"><label for="settings-homepage">{{ trans('settings.homepage') }}</label><select id="settings-homepage" name="homepage">{% for value, label in homepages %}<option value="{{ value }}"{% if values.homepage|default('home') == value %} selected{% endif %}>{{ trans(label) }}</option>{% endfor %}</select><small>{{ trans('settings.homepage_help') }}</small>{% if errors.homepage|default(null) %}<span class="field-error">{{ errors.homepage }}</span>{% endif %}</div>
+                </div>
+            </section>
+
+            <section class="nn-settings-card">
+                <header><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-house"></i></span><div><h2>{{ trans('settings.home_content_title') }}</h2><p>{{ trans('settings.home_content_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    <h3>{{ trans('settings.home_content_english') }}</h3>
+                    <div class="nn-settings-field">
+                        <label for="settings-home-en-headline">{{ trans('settings.home_headline') }}</label>
+                        <input id="settings-home-en-headline" name="home_en_headline" value="{{ values.home_en_headline|default('') }}" maxlength="200">
+                        <small>{{ trans('settings.home_headline_help') }}</small>
+                        {% if errors.home_en_headline|default(null) %}<span class="field-error">{{ errors.home_en_headline }}</span>{% endif %}
+                    </div>
+                    <div class="nn-settings-field">
+                        <label for="settings-home-en-description">{{ trans('settings.home_description') }}</label>
+                        <textarea id="settings-home-en-description" name="home_en_description" rows="3" maxlength="500">{{ values.home_en_description|default('') }}</textarea>
+                        <small>{{ trans('settings.home_description_help') }}</small>
+                        {% if errors.home_en_description|default(null) %}<span class="field-error">{{ errors.home_en_description }}</span>{% endif %}
+                    </div>
+                    <h3>{{ trans('settings.home_content_spanish') }}</h3>
+                    <div class="nn-settings-field">
+                        <label for="settings-home-es-headline">{{ trans('settings.home_headline') }}</label>
+                        <input id="settings-home-es-headline" name="home_es_headline" value="{{ values.home_es_headline|default('') }}" maxlength="200">
+                        <small>{{ trans('settings.home_headline_help') }}</small>
+                        {% if errors.home_es_headline|default(null) %}<span class="field-error">{{ errors.home_es_headline }}</span>{% endif %}
+                    </div>
+                    <div class="nn-settings-field">
+                        <label for="settings-home-es-description">{{ trans('settings.home_description') }}</label>
+                        <textarea id="settings-home-es-description" name="home_es_description" rows="3" maxlength="500">{{ values.home_es_description|default('') }}</textarea>
+                        <small>{{ trans('settings.home_description_help') }}</small>
+                        {% if errors.home_es_description|default(null) %}<span class="field-error">{{ errors.home_es_description }}</span>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="nn-settings-card">
+                <header><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-cards-three"></i></span><div><h2>{{ trans('settings.home_cards_title') }}</h2><p>{{ trans('settings.home_cards_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    <h3>{{ trans('settings.home_content_english') }}</h3>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-explore-title">{{ trans('settings.home_card_explore_title') }}</label><input id="settings-home-en-card-explore-title" name="home_en_card_explore_title" value="{{ values.home_en_card_explore_title|default('') }}" maxlength="200">{% if errors.home_en_card_explore_title|default(null) %}<span class="field-error">{{ errors.home_en_card_explore_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-explore-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-en-card-explore-description" name="home_en_card_explore_description" rows="3" maxlength="500">{{ values.home_en_card_explore_description|default('') }}</textarea>{% if errors.home_en_card_explore_description|default(null) %}<span class="field-error">{{ errors.home_en_card_explore_description }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-account-title">{{ trans('settings.home_card_account_title') }}</label><input id="settings-home-en-card-account-title" name="home_en_card_account_title" value="{{ values.home_en_card_account_title|default('') }}" maxlength="200"><small>{{ trans('settings.home_card_account_title_help') }}</small>{% if errors.home_en_card_account_title|default(null) %}<span class="field-error">{{ errors.home_en_card_account_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-account-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-en-card-account-description" name="home_en_card_account_description" rows="3" maxlength="500">{{ values.home_en_card_account_description|default('') }}</textarea>{% if errors.home_en_card_account_description|default(null) %}<span class="field-error">{{ errors.home_en_card_account_description }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-guest-title">{{ trans('settings.home_card_guest_title') }}</label><input id="settings-home-en-card-guest-title" name="home_en_card_guest_title" value="{{ values.home_en_card_guest_title|default('') }}" maxlength="200">{% if errors.home_en_card_guest_title|default(null) %}<span class="field-error">{{ errors.home_en_card_guest_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-en-card-guest-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-en-card-guest-description" name="home_en_card_guest_description" rows="3" maxlength="500">{{ values.home_en_card_guest_description|default('') }}</textarea>{% if errors.home_en_card_guest_description|default(null) %}<span class="field-error">{{ errors.home_en_card_guest_description }}</span>{% endif %}</div>
+                    <h3>{{ trans('settings.home_content_spanish') }}</h3>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-explore-title">{{ trans('settings.home_card_explore_title') }}</label><input id="settings-home-es-card-explore-title" name="home_es_card_explore_title" value="{{ values.home_es_card_explore_title|default('') }}" maxlength="200">{% if errors.home_es_card_explore_title|default(null) %}<span class="field-error">{{ errors.home_es_card_explore_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-explore-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-es-card-explore-description" name="home_es_card_explore_description" rows="3" maxlength="500">{{ values.home_es_card_explore_description|default('') }}</textarea>{% if errors.home_es_card_explore_description|default(null) %}<span class="field-error">{{ errors.home_es_card_explore_description }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-account-title">{{ trans('settings.home_card_account_title') }}</label><input id="settings-home-es-card-account-title" name="home_es_card_account_title" value="{{ values.home_es_card_account_title|default('') }}" maxlength="200"><small>{{ trans('settings.home_card_account_title_help') }}</small>{% if errors.home_es_card_account_title|default(null) %}<span class="field-error">{{ errors.home_es_card_account_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-account-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-es-card-account-description" name="home_es_card_account_description" rows="3" maxlength="500">{{ values.home_es_card_account_description|default('') }}</textarea>{% if errors.home_es_card_account_description|default(null) %}<span class="field-error">{{ errors.home_es_card_account_description }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-guest-title">{{ trans('settings.home_card_guest_title') }}</label><input id="settings-home-es-card-guest-title" name="home_es_card_guest_title" value="{{ values.home_es_card_guest_title|default('') }}" maxlength="200">{% if errors.home_es_card_guest_title|default(null) %}<span class="field-error">{{ errors.home_es_card_guest_title }}</span>{% endif %}</div>
+                    <div class="nn-settings-field"><label for="settings-home-es-card-guest-description">{{ trans('settings.home_card_description') }}</label><textarea id="settings-home-es-card-guest-description" name="home_es_card_guest_description" rows="3" maxlength="500">{{ values.home_es_card_guest_description|default('') }}</textarea>{% if errors.home_es_card_guest_description|default(null) %}<span class="field-error">{{ errors.home_es_card_guest_description }}</span>{% endif %}</div>
+                </div>
+            </section>
+
+            <section class="nn-settings-card nn-settings-maintenance{% if values.maintenance|default(false) %} is-active{% endif %}">
+                <header><span class="nn-soft-icon nn-soft-orange"><i class="ph ph-wrench"></i></span><div><h2>{{ trans('settings.maintenance_title') }}</h2><p>{{ trans('settings.maintenance_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    <input type="hidden" name="maintenance" value="0">
+                    <label class="nn-settings-toggle-row" for="settings-maintenance"><div><strong>{{ trans('settings.maintenance') }}</strong><small>{{ trans('settings.maintenance_detail') }}</small></div><span class="nn-switch"><input id="settings-maintenance" type="checkbox" name="maintenance" value="1"{% if values.maintenance|default(false) %} checked{% endif %}><i></i></span></label>
+                </div>
+            </section>
+        </main>
+
+        <aside class="nn-settings-aside">
+            <section class="nn-settings-summary">
+                <header><span class="nn-soft-icon nn-soft-green"><i class="ph ph-check-circle"></i></span><div><h2>{{ trans('settings.summary_title') }}</h2><p>{{ trans('settings.summary_help') }}</p></div></header>
+                <div class="nn-settings-summary-list">
+                    <div><span>{{ trans('settings.language') }}</span><strong>{{ values.locale|default('en')|upper }}</strong></div>
+                    <div><span>{{ trans('settings.timezone') }}</span><strong>{{ values.timezone|default('UTC') }}</strong></div>
+                    <div><span>{{ trans('settings.homepage') }}</span><strong>{{ values.homepage|default('home') }}</strong></div>
+                    <div><span>{{ trans('settings.maintenance') }}</span><strong class="{% if values.maintenance|default(false) %}is-warn{% else %}is-ok{% endif %}">{% if values.maintenance|default(false) %}{{ trans('settings.status_on') }}{% else %}{{ trans('settings.status_off') }}{% endif %}</strong></div>
+                </div>
+            </section>
+            <section class="nn-settings-note"><i class="ph ph-shield-check"></i><div><strong>{{ trans('settings.sensitive_title') }}</strong><p>{{ trans('settings.sensitive_help') }}</p></div></section>
+            <div class="nn-settings-actions"><button class="nn-settings-save" type="submit"><i class="ph ph-floppy-disk"></i>{{ trans('settings.save') }}</button><a href="/admin" class="nn-settings-cancel">{{ trans('settings.back') }}</a></div>
+        </aside>
+    </form>
+</section>
+{% endblock %}

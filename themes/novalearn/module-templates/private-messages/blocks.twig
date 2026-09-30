@@ -1,0 +1,16 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('private-messages::blocked.title') }} — {{ trans('private-messages::title') }}{% endblock %}
+{% block content %}
+<section class="messages-page nl-comms-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('private-messages::title'), url: '/messages'}, {label: trans('private-messages::blocked.title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('private-messages::account'), title: trans('private-messages::blocked.title'), description: trans('private-messages::blocked.description')} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    <div class="nl-message-app">
+        <aside class="nl-message-sidebar"><a class="nl-compose-cta" href="/messages/compose">+ {{ trans('private-messages::nav.new') }}</a><nav class="nl-message-folders"><a href="/messages"><span>✉</span>{{ trans('private-messages::nav.inbox') }}</a><a href="/messages/sent"><span>↗</span>{{ trans('private-messages::nav.sent') }}</a><a class="is-active" href="/messages/blocks"><span>⊘</span>{{ trans('private-messages::nav.blocked') }}</a></nav></aside>
+        <div class="nl-message-panel"><div class="nl-message-panel-head"><div><span class="nl-kicker">{{ trans('private-messages::account') }}</span><h2>{{ trans('private-messages::blocked.title') }}</h2></div></div>
+        {% if blocks %}<div class="nl-blocked-list">{% for item in blocks %}<article class="nl-blocked-user"><span class="nl-person-avatar is-muted">{{ item.username|slice(0,1)|upper }}</span><div><strong>{{ item.username }}</strong><small>{{ trans('private-messages::blocked.since', {date: item.created_at}) }}</small></div><form method="post" action="/messages/users/{{ item.id }}/unblock"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>{{ trans('private-messages::blocked.unblock') }}</button></form></article>{% endfor %}</div>{% else %}{% include 'components/empty-state.twig' with {title: trans('private-messages::blocked.empty'), message: trans('private-messages::blocked.empty_help')} only %}{% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

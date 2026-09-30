@@ -1,0 +1,37 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('web-links::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-links-index">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('web-links::title')}]} only %}
+  <header class="nl-page-heading nl-links-heading">
+    <div><span class="nl-eyebrow">{{ trans('web-links::eyebrow') }}</span><h1>{{ trans('web-links::title') }}</h1></div>
+    <div class="nl-heading-actions">{% if manage_url %}<a href="{{ manage_url }}">{{ trans('web-links::manage') }}</a>{% endif %}<a class="nl-primary-button" href="/links/submit">{{ trans('web-links::submit') }}</a></div>
+  </header>
+
+  <form class="nl-links-toolbar" method="get" action="/links">
+    <label class="nl-links-search"><span aria-hidden="true">⌕</span><input name="q" maxlength="100" value="{{ search }}" placeholder="{{ trans('web-links::search_placeholder') }}"></label>
+    <select name="order" aria-label="{{ trans('web-links::search') }}"><option value="new" {{ order == 'new' ? 'selected' : '' }}>{{ trans('web-links::order.new') }}</option><option value="popular" {{ order == 'popular' ? 'selected' : '' }}>{{ trans('web-links::order.popular') }}</option><option value="title" {{ order == 'title' ? 'selected' : '' }}>{{ trans('web-links::order.title') }}</option></select>
+    <button class="nl-primary-button" type="submit">{{ trans('web-links::search') }}</button>
+  </form>
+
+  {% if categories|length %}<nav class="nl-links-categories" aria-label="{{ trans('web-links::title') }}">
+    <a class="nl-link-category {{ not category ? 'is-active' : '' }}" href="/links"><span>{{ trans('theme::all_short') }}</span><strong>{{ trans('web-links::all') }}</strong></a>
+    {% for item in categories %}<a class="nl-link-category nl-link-category-{{ (loop.index0 % 5) + 1 }} {{ category == item.slug ? 'is-active' : '' }}" href="/links/category/{{ item.slug }}"><span>{{ item.name|slice(0,2)|upper }}</span><strong>{{ item.name }}</strong></a>{% endfor %}
+  </nav>{% endif %}
+
+  {% if result.items|length %}
+    {% set featured = result.items|first %}
+    <article class="nl-link-feature {{ featured.image_path ? 'has-image' : '' }}">
+      <div class="nl-link-feature-copy"><div class="nl-kicker">{% if featured.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('web-links::featured') }}</span>{% endif %}<span class="nl-category-pill">{{ featured.category_name|default(trans('web-links::uncategorized'), true) }}</span></div>
+      <h2><a href="/links/{{ featured.slug }}">{{ featured.title }}</a></h2><p>{{ featured.description_text|slice(0,300) }}</p><div class="nl-link-meta"><span>{{ trans('web-links::visits', {count: featured.visit_count}) }}</span></div><div class="nl-link-feature-actions"><a class="nl-primary-button" href="/links/{{ featured.slug }}">{{ trans('web-links::visit_website') }} <span>→</span></a></div></div>
+      <a class="nl-link-feature-media" href="/links/{{ featured.slug }}" aria-label="{{ featured.title }}">{% if featured.image_path %}<img src="{{ featured.image_path }}" alt="">{% else %}<div class="nl-link-art"><span>↗</span></div>{% endif %}</a>
+    </article>
+
+    {% if result.items|length > 1 %}<div class="nl-links-grid">{% for item in result.items|slice(1) %}<article class="nl-link-card">
+      <a class="nl-link-card-media" href="/links/{{ item.slug }}">{% if item.image_path %}<img src="{{ item.image_path }}" alt="">{% else %}<span class="nl-link-icon">↗</span>{% endif %}</a>
+      <div class="nl-link-card-body"><div class="nl-kicker">{% if item.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('web-links::featured') }}</span>{% endif %}<span class="nl-category-pill">{{ item.category_name|default(trans('web-links::uncategorized'), true) }}</span></div><h2><a href="/links/{{ item.slug }}">{{ item.title }}</a></h2><p>{{ item.description_text|slice(0,190) }}</p><div class="nl-link-card-footer"><small>{{ trans('web-links::visits', {count: item.visit_count}) }}</small><a href="/links/{{ item.slug }}">{{ trans('web-links::visit_website') }} →</a></div></div>
+    </article>{% endfor %}</div>{% endif %}
+  {% else %}{% include 'components/empty-state.twig' with {title: trans('web-links::empty'), message: trans('web-links::empty_help'), action_url: '/links/submit', action_label: trans('web-links::submit')} only %}{% endif %}
+  {% set pagination_url = '?q=' ~ (search|url_encode) ~ '&order=' ~ (order|url_encode) ~ '&page={page}' %}{% include 'components/pagination.twig' with {current_page: result.page, total_pages: result.pages, url_template: pagination_url, label: trans('web-links::pagination')} only %}
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% set trail = items|default([]) %}
+{% if trail %}
+<nav class="content-breadcrumbs" aria-label="{{ trans('theme::breadcrumbs') }}">
+    <ol>
+        <li><a href="/">{{ trans('common.home_label') }}</a></li>
+        {% for item in trail %}
+            <li>
+                {% if item.url|default(null) %}
+                    <a href="{{ item.url }}">{{ item.label }}</a>
+                {% else %}
+                    <span aria-current="page">{{ item.label }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}

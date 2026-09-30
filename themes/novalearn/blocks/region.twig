@@ -1,0 +1,1 @@
+{% if items %}<section class="nova-block-region nova-block-region-{{ position }}" data-block-position="{{ position }}">{% for item in items %}<article class="nova-block nova-block-{{ item.slug }}">{% if item.show_title %}<h2>{{ item.title }}</h2>{% endif %}<div class="nova-block-body">{{ item.html }}</div></article>{% endfor %}</section>{% endif %}

@@ -1,0 +1,3 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('statistics::unavailable.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="nl-statistics-page">{% include 'components/breadcrumbs.twig' with {items: [{label: trans('statistics::navigation.label')}]} only %}<div class="nl-statistics-unavailable"><span aria-hidden="true">▥</span>{% include 'components/empty-state.twig' with {title: trans('statistics::unavailable.title'), message: trans('statistics::unavailable.message')} only %}</div></section>{% endblock %}

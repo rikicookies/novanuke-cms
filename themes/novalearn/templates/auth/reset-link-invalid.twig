@@ -1,0 +1,3 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.reset.invalid_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="nl-auth-status-page"><div class="nl-auth-status-card nl-auth-status-card-warning"><span class="nl-auth-status-symbol">!</span><span class="nl-login-kicker">{{ trans('auth.recovery.eyebrow') }}</span><h1>{{ trans('auth.reset.invalid_title') }}</h1><p>{{ trans('auth.reset.invalid_message') }}</p><a class="nl-auth-primary nl-auth-primary-link" href="/forgot-password">{{ trans('auth.reset.request_another') }}</a></div></section>{% endblock %}

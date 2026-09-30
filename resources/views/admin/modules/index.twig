@@ -1,0 +1,160 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.modules.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+{% set detected = modules|length %}
+{% set installed = 0 %}{% set enabled = 0 %}{% set updates = 0 %}{% set issues = 0 %}
+{% for slug, item in modules %}
+    {% if item.installed %}{% set installed = installed + 1 %}{% endif %}
+    {% if item.enabled %}{% set enabled = enabled + 1 %}{% endif %}
+    {% if item.update_available %}{% set updates = updates + 1 %}{% endif %}
+    {% if not item.compatible or item.last_error or item.missing_files %}{% set issues = issues + 1 %}{% endif %}
+{% endfor %}
+<section class="nn-v2-page nn-modules-page">
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.modules.title')}]} only %}
+
+    <div class="nn-v2-page-header">
+        <div>
+            <div class="nn-v2-eyebrow">{{ trans('admin.modules.eyebrow') }}</div>
+            <h1>{{ trans('admin.modules.title') }}</h1>
+            <p>{{ trans('admin.modules.description') }}</p>
+        </div>
+        <button class="btn btn-primary nn-modules-upload-toggle" type="button" data-module-upload-toggle aria-expanded="false">
+            <i class="ph-upload-simple"></i> {{ trans('admin.modules.package.upload_action') }}
+        </button>
+    </div>
+
+    {% if message %}<div class="alert alert-success nn-v2-alert"><i class="ph-check-circle"></i><div>{{ message }}</div></div>{% endif %}
+    {% if error %}<div class="alert alert-danger nn-v2-alert"><i class="ph-warning-circle"></i><div>{{ error }}</div></div>{% endif %}
+
+    <div class="row g-3 nn-module-stats">
+        <div class="col-6 col-xl-3"><div class="nn-v2-stat-card"><span class="nn-v2-stat-icon bg-primary bg-opacity-10 text-primary"><i class="ph-package"></i></span><div><strong>{{ detected }}</strong><span>{{ trans('admin.modules.stats.detected') }}</span></div></div></div>
+        <div class="col-6 col-xl-3"><div class="nn-v2-stat-card"><span class="nn-v2-stat-icon bg-success bg-opacity-10 text-success"><i class="ph-check-circle"></i></span><div><strong>{{ enabled }}</strong><span>{{ trans('admin.modules.stats.enabled') }}</span></div></div></div>
+        <div class="col-6 col-xl-3"><div class="nn-v2-stat-card"><span class="nn-v2-stat-icon bg-info bg-opacity-10 text-info"><i class="ph-hard-drives"></i></span><div><strong>{{ installed }}</strong><span>{{ trans('admin.modules.stats.installed') }}</span></div></div></div>
+        <div class="col-6 col-xl-3"><div class="nn-v2-stat-card"><span class="nn-v2-stat-icon {{ issues ? 'bg-warning bg-opacity-10 text-warning' : 'bg-secondary bg-opacity-10 text-secondary' }}"><i class="ph-warning"></i></span><div><strong>{{ issues }}</strong><span>{{ trans('admin.modules.stats.attention') }}</span></div></div></div>
+    </div>
+
+    <div class="card nn-module-upload-card" data-module-upload-panel hidden>
+        <div class="card-body">
+            <div class="d-flex gap-3 align-items-start">
+                <div class="nn-module-package-icon"><i class="ph-file-zip"></i></div>
+                <div class="flex-fill">
+                    <h2 class="h5 mb-1">{{ trans('admin.modules.package.title') }}</h2>
+                    <p class="text-muted mb-3">{{ trans('admin.modules.package.help') }}</p>
+                    <form method="post" action="/admin/modules/package" enctype="multipart/form-data" class="nn-module-upload-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token }}">
+                        <div class="input-group"><input class="form-control" type="file" name="module_package" accept=".zip,application/zip" required><button class="btn btn-primary" type="submit"><i class="ph-upload-simple me-1"></i>{{ trans('admin.modules.package.upload') }}</button></div>
+                        <small class="text-muted">{{ trans('admin.modules.package.trusted_note') }}</small>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card nn-module-control-card">
+        <div class="card-body nn-module-toolbar">
+            <div class="nn-module-search"><i class="ph-magnifying-glass"></i><input type="search" class="form-control" placeholder="{{ trans('admin.modules.search_placeholder') }}" data-module-search></div>
+            <div class="nn-module-filter-group" role="group" aria-label="{{ trans('admin.modules.filter.label') }}">
+                <button type="button" class="nn-module-filter active" data-module-filter="all">{{ trans('admin.modules.filter.all') }} <span>{{ detected }}</span></button>
+                <button type="button" class="nn-module-filter" data-module-filter="enabled">{{ trans('admin.modules.filter.enabled') }} <span>{{ enabled }}</span></button>
+                <button type="button" class="nn-module-filter" data-module-filter="disabled">{{ trans('admin.modules.filter.disabled') }}</button>
+                <button type="button" class="nn-module-filter" data-module-filter="available">{{ trans('admin.modules.filter.available') }}</button>
+                {% if updates %}<button type="button" class="nn-module-filter" data-module-filter="update">{{ trans('admin.modules.filter.updates') }} <span>{{ updates }}</span></button>{% endif %}
+                {% if issues %}<button type="button" class="nn-module-filter" data-module-filter="issue">{{ trans('admin.modules.filter.attention') }} <span>{{ issues }}</span></button>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="nn-module-list" data-module-list>
+        {% for slug, item in modules %}
+        {% set state = item.missing_files ? 'missing' : (item.enabled ? 'enabled' : (item.installed ? 'disabled' : 'available')) %}
+        {% set has_issue = (not item.compatible or item.last_error or item.missing_files) %}
+        <article class="card nn-module-row" id="module-{{ slug }}" data-module-item data-module-state="{{ state }}" data-module-update="{{ item.update_available ? '1' : '0' }}" data-module-issue="{{ has_issue ? '1' : '0' }}" data-module-search-text="{{ ((item.manifest ? item.manifest.name : item.name) ~ ' ' ~ slug ~ ' ' ~ (item.manifest ? item.manifest.description : ''))|lower|e('html_attr') }}">
+            <div class="card-body">
+                <div class="nn-module-main">
+                    <div class="nn-module-avatar"><i class="ph-puzzle-piece"></i></div>
+                    <div class="nn-module-identity">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <h2>{{ item.manifest ? item.manifest.name : item.name }}</h2>
+                            <span class="nn-status-pill nn-status-{{ state }}"><span></span>{{ item.missing_files ? trans('admin.modules.missing') : (item.enabled ? trans('admin.modules.enabled') : (item.installed ? trans('admin.modules.disabled') : trans('admin.modules.available'))) }}</span>
+                            {% if item.update_available %}<span class="nn-module-update-badge"><i class="ph-arrow-circle-up"></i>{{ trans('admin.modules.update_available') }}</span>{% endif %}
+                        </div>
+                        <div class="nn-module-slug">{{ slug }}</div>
+                        {% if item.manifest %}<p>{{ item.manifest.description }}</p>{% else %}<p class="text-danger">{{ trans('admin.modules.files_missing') }}</p>{% endif %}
+                        <div class="nn-module-meta">
+                            <span><i class="ph-tag"></i>{{ trans('admin.modules.available_version') }} <strong>{{ item.manifest ? item.manifest.version : '—' }}</strong></span>
+                            <span><i class="ph-hard-drive"></i>{{ trans('admin.modules.installed_version') }} <strong>{{ item.installed_version ?: '—' }}</strong></span>
+                            <span><i class="ph-user"></i>{{ item.manifest and item.manifest.author ? item.manifest.author : trans('admin.modules.unknown') }}</span>
+                            {% if item.installed %}<span><i class="ph-users-three"></i>{{ trans('admin.modules.audience.short') }} <strong>{{ trans('admin.modules.audience.' ~ (item.audience == 'public' ? 'everyone' : (item.audience == 'guest' ? 'guests' : (item.audience == 'member' ? 'members' : 'vip')))) }}</strong></span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="nn-module-primary-actions">
+                        {% if not item.installed and item.manifest and item.compatible %}
+                            <form method="post" action="/admin/modules/{{ slug }}/install" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.installed') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit"><i class="ph-download-simple"></i>{{ trans('admin.modules.install') }}</button></form>
+                        {% elseif item.installed and item.manifest %}
+                            {% if item.update_available and item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/update" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.updated') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit"><i class="ph-arrow-circle-up"></i>{{ trans('admin.modules.update') }}</button></form>{% endif %}
+                            {% if item.enabled %}<form method="post" action="/admin/modules/{{ slug }}/disable" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.disabled') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="btn btn-light" type="submit"><i class="ph-pause-circle"></i>{{ trans('admin.modules.disable') }}</button></form>
+                            {% elseif item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/enable" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.enabled') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="btn btn-success" type="submit"><i class="ph-play-circle"></i>{{ trans('admin.modules.enable') }}</button></form>{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if not item.compatible %}<div class="alert alert-warning nn-module-inline-alert"><i class="ph-warning"></i><div><strong>{{ trans('admin.modules.compatibility_title') }}</strong><br>{{ item.compatibility_reason }}</div></div>{% endif %}
+                {% if item.missing_files %}
+                    <div class="alert alert-danger nn-module-inline-alert"><i class="ph-warning-circle"></i><div><strong>{{ trans('admin.modules.missing_title') }}</strong><br>{{ trans('admin.modules.missing_help') }}</div></div>
+                    <div class="nn-module-settings-strip">
+                        <div class="nn-module-danger-zone">
+                            <button class="nn-module-danger-trigger" type="button" data-module-confirm-open data-module-confirm-target="module-confirm-{{ slug }}" aria-haspopup="dialog" aria-controls="module-confirm-{{ slug }}"><i class="ph-broom"></i>{{ trans('admin.modules.forget_missing_title') }}</button>
+                            <dialog id="module-confirm-{{ slug }}" class="nn-module-confirm-dialog" aria-labelledby="module-confirm-title-{{ slug }}" aria-describedby="module-confirm-help-{{ slug }} module-confirm-instruction-{{ slug }}">
+                                <div class="nn-module-confirm-panel">
+                                    <header class="nn-module-confirm-heading">
+                                        <div class="nn-module-confirm-icon" aria-hidden="true"><i class="ph-warning"></i></div>
+                                        <div class="nn-module-confirm-heading-copy"><span class="nn-module-confirm-eyebrow">{{ trans('admin.modules.missing_title') }}</span><h2 id="module-confirm-title-{{ slug }}">{{ trans('admin.modules.forget_missing_title') }}</h2><div class="nn-module-confirm-identity"><strong>{{ item.manifest ? item.manifest.name : item.name }}</strong><span class="nn-module-confirm-badge"><i class="ph-warning-circle" aria-hidden="true"></i>{{ trans('admin.modules.missing') }}</span></div></div>
+                                        <button class="nn-module-confirm-close" type="button" data-module-confirm-cancel aria-label="{{ trans('admin.modules.cancel') }}"><i class="ph-x" aria-hidden="true"></i></button>
+                                    </header>
+                                    <div class="nn-module-confirm-body">
+                                        <p id="module-confirm-help-{{ slug }}" class="nn-module-confirm-help">{{ trans('admin.modules.missing_help') }}</p>
+                                        <div class="nn-module-confirm-callout" role="note"><i class="ph-warning" aria-hidden="true"></i><div><strong>{{ trans('admin.modules.forget_missing_title') }}</strong><p>{{ trans('admin.modules.forget_missing_help') }}</p></div></div>
+                                    </div>
+                                    <form method="post" action="/admin/modules/{{ slug }}/forget-missing" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-remove-if-absent="true" data-ajax-success="{{ trans('admin.modules.ajax.forget_missing') }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token }}">
+                                        <div id="module-confirm-instruction-{{ slug }}" class="nn-module-confirm-instruction"><span>{{ trans('admin.modules.confirm_missing', {slug: slug}) }}</span><code>{{ slug }}</code></div>
+                                        <label class="visually-hidden" for="module-confirm-slug-{{ slug }}">{{ trans('admin.modules.confirm_missing', {slug: slug}) }}</label>
+                                        <input id="module-confirm-slug-{{ slug }}" class="form-control" name="confirm_slug" required autocomplete="off" placeholder="{{ slug }}">
+                                        <div class="nn-module-confirm-actions"><button class="btn btn-light" type="button" data-module-confirm-cancel>{{ trans('admin.modules.cancel') }}</button><button class="btn btn-danger" type="submit"><i class="ph-broom" aria-hidden="true"></i>{{ trans('admin.modules.forget_missing') }}</button></div>
+                                    </form>
+                                </div>
+                            </dialog>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if item.last_error %}<div class="alert alert-danger nn-module-inline-alert"><i class="ph-x-circle"></i><div><strong>{{ trans('admin.modules.last_error') }}</strong><br>{{ item.last_error }}</div></div>{% endif %}
+
+                {% if item.installed and item.manifest %}
+                <div class="nn-module-settings-strip">
+                    <form method="post" action="/admin/modules/{{ slug }}/audience" class="nn-module-audience-form" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.audience') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token }}">
+                        <label><i class="ph-eye"></i><span>{{ trans('admin.modules.public_audience') }}</span><select class="form-select form-select-sm" name="audience"><option value="public" {{ item.audience == 'public' ? 'selected' : '' }}>{{ trans('admin.modules.audience.everyone') }}</option><option value="guest" {{ item.audience == 'guest' ? 'selected' : '' }}>{{ trans('admin.modules.audience.guests') }}</option><option value="member" {{ item.audience == 'member' ? 'selected' : '' }}>{{ trans('admin.modules.audience.members') }}</option><option value="vip" {{ item.audience == 'vip' ? 'selected' : '' }}>{{ trans('admin.modules.audience.vip') }}</option></select></label>
+                        <button class="btn btn-sm btn-outline-primary" type="submit">{{ trans('admin.modules.save_audience') }}</button>
+                    </form>
+                    <details class="nn-module-danger-zone">
+                        <summary><i class="ph-dots-three"></i>{{ trans('admin.modules.more_actions') }}</summary>
+                        <div class="nn-module-danger-popover">
+                            <div><strong>{{ trans('admin.modules.uninstall_title') }}</strong><p>{{ trans('admin.modules.uninstall_help') }}</p></div>
+                            <form method="post" action="/admin/modules/{{ slug }}/uninstall" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="{{ trans('admin.modules.ajax.uninstalled') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                                <label class="form-check"><input class="form-check-input" type="checkbox" name="delete_data" value="1"><span class="form-check-label">{{ trans('admin.modules.delete_data') }}</span></label>
+                                <label class="form-label mt-2">{{ trans('admin.modules.confirm_slug', {slug: slug}) }}</label>
+                                <div class="input-group input-group-sm"><input class="form-control" name="confirm_slug" required autocomplete="off" placeholder="{{ slug }}"><button class="btn btn-danger" type="submit"><i class="ph-trash"></i>{{ trans('admin.modules.uninstall') }}</button></div>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+                {% endif %}
+            </div>
+        </article>
+        {% else %}<div class="card"><div class="card-body text-center py-5"><i class="ph-package fs-1 text-muted"></i><h2 class="h5 mt-3">{{ trans('admin.modules.empty') }}</h2></div></div>{% endfor %}
+    </div>
+    <div class="nn-module-no-results" data-module-no-results hidden><i class="ph-magnifying-glass"></i><h2>{{ trans('admin.modules.no_results') }}</h2><p>{{ trans('admin.modules.no_results_help') }}</p></div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/assets/js/progressive-actions.js?v=1"></script><script src="/assets/admin/limitless/js/modules-admin.js?v=2"></script>{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.security.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="dashboard-card account-security">
+    <p class="eyebrow">{{ trans('account.settings') }}</p>
+    <h1>{{ trans('account.security.title') }}</h1>
+    <p>{{ trans('account.security.description') }}</p>
+    <p><a href="/account/profile">{{ trans('account.security.back') }}</a></p>
+    <p><a href="/account/email">{{ trans('account.email.link') }}</a></p>
+
+    <h2>{{ trans('account.security.logins') }}</h2>
+    <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>{{ trans('account.security.date') }}</th><th>{{ trans('account.security.device') }}</th><th>{{ trans('account.security.ip') }}</th></tr></thead>
+        <tbody>{% for login in logins %}<tr><td>{{ login.logged_in_at }}</td><td>{{ login.device }}</td><td>{{ login.ip_address }}</td></tr>{% else %}<tr><td colspan="3">{{ trans('account.security.no_logins') }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+
+    <div class="danger-zone">
+        <h2>{{ trans('account.delete.title') }}</h2>
+        <p>{{ trans('account.delete.warning') }}</p>
+        <form method="post" action="/account/delete" class="settings-form">
+            <input type="hidden" name="_token" value="{{ csrf_token }}">
+            <label>{{ trans('account.delete.confirmation', {username: account_user.username}) }}
+                <input name="confirmation" autocomplete="off" required>
+                {% if errors.confirmation|default(null) %}<small class="field-error">{{ errors.confirmation }}</small>{% endif %}
+            </label>
+            <label>{{ trans('account.password.current') }}
+                <input type="password" name="password" autocomplete="current-password" required>
+                {% if errors.password|default(null) %}<small class="field-error">{{ errors.password }}</small>{% endif %}
+            </label>
+            <button class="danger-button" type="submit">{{ trans('account.delete.submit') }}</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

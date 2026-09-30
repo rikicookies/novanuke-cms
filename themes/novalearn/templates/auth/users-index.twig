@@ -1,0 +1,11 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('users.directory.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-account-page nl-members-directory">
+{% include 'components/breadcrumbs.twig' with {items: [{label: trans('users.directory.title')}]} only %}
+<header class="nl-account-hero"><div><span class="nl-kicker">{{ trans('users.directory.eyebrow') }}</span><h1>{{ trans('users.directory.title') }}</h1><p>{{ trans('users.directory.count', {count: result.total}) }}</p></div></header>
+<div class="nl-profile-nav nl-account-tabs">{% include "auth/_social-nav.twig" %}</div>
+<div class="nl-member-grid">{% for profile in result.items %}<article class="nl-member-card"><a class="nl-member-avatar-link" href="/users/{{ profile.username }}">{% if profile.avatar_path %}<img class="nl-profile-avatar nl-profile-avatar-small" src="{{ profile.avatar_path }}" alt="">{% else %}<div class="nl-profile-avatar nl-profile-avatar-small nl-profile-avatar-placeholder">{{ profile.display_name|slice(0,1)|upper }}</div>{% endif %}</a><div><h2><a href="/users/{{ profile.username }}">{{ profile.display_name }}</a></h2><p>@{{ profile.username }}</p><small>{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</small></div><a class="nl-card-arrow" href="/users/{{ profile.username }}" aria-label="{{ profile.display_name }}">→</a></article>{% else %}<div class="nl-surface nl-empty-inline"><strong>{{ trans('users.directory.empty') }}</strong></div>{% endfor %}</div>
+{% if result.pages > 1 %}<nav class="pagination" aria-label="{{ trans('users.directory.pagination') }}">{% for page in 1..result.pages %}<a class="{{ page == result.page ? 'current' : '' }}" href="/users?page={{ page }}">{{ page }}</a>{% endfor %}</nav>{% endif %}
+</section>
+{% endblock %}

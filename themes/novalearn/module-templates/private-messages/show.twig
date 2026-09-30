@@ -1,0 +1,27 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ thread.subject }} — {{ trans('private-messages::title') }}{% endblock %}
+{% block content %}
+<section class="messages-page nl-comms-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('private-messages::title'), url: '/messages'}, {label: thread.subject}]} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    <div class="nl-message-app nl-thread-app">
+        <aside class="nl-message-sidebar"><a class="nl-compose-cta" href="/messages/compose">+ {{ trans('private-messages::nav.new') }}</a><nav class="nl-message-folders"><a class="is-active" href="/messages"><span>✉</span>{{ trans('private-messages::nav.inbox') }}</a><a href="/messages/sent"><span>↗</span>{{ trans('private-messages::nav.sent') }}</a><a href="/messages/blocks"><span>⊘</span>{{ trans('private-messages::nav.blocked') }}</a></nav></aside>
+        <div class="nl-message-panel nl-thread-panel">
+            <header class="nl-thread-head"><div class="nl-thread-person"><span class="nl-person-avatar">{{ thread.other.username|slice(0,1)|upper }}</span><div><span class="nl-kicker">{{ trans('private-messages::thread.with', {name: thread.other.username}) }}</span><h1>{{ thread.subject }}</h1></div></div></header>
+            <div class="nl-chat-stream">
+                {% for item in thread.messages %}
+                {% set mine = current_user is defined and current_user and item.sender_id == current_user.id %}
+                <article class="nl-chat-message {{ mine ? 'is-mine' : 'is-theirs' }}">
+                    <span class="nl-chat-avatar">{{ item.username|slice(0,1)|upper }}</span>
+                    <div class="nl-chat-bubble"><div class="nl-chat-meta"><strong>{{ item.username }}</strong><time>{{ item.created_at }}</time></div><div class="message-body">{{ item.body_html }}</div>{% if item.sender_id == thread.other.id %}<details><summary>{{ trans('private-messages::report_abuse') }}</summary><form class="form-surface" method="post" action="/messages/{{ item.id }}/report"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="conversation_id" value="{{ thread.id }}"><label>{{ trans('private-messages::reason') }}<textarea name="reason" required minlength="5" maxlength="500"></textarea></label><button>{{ trans('private-messages::report') }}</button></form></details>{% endif %}</div>
+                </article>
+                {% endfor %}
+            </div>
+            <form class="nl-reply-box" method="post" action="/messages/{{ thread.id }}/reply"><input type="hidden" name="_token" value="{{ csrf_token }}"><div class="nl-reply-tools"><label>{{ trans('private-messages::field.format') }}<select name="body_format"><option value="markdown">{{ trans('private-messages::field.markdown') }}</option><option value="html">{{ trans('private-messages::field.html') }}</option></select></label></div><textarea name="body" required minlength="2" maxlength="5000" rows="5" placeholder="{{ trans('private-messages::reply') }}"></textarea><div class="nl-reply-actions"><button class="module-button-primary">{{ trans('private-messages::send_reply') }}</button></div></form>
+            <details class="nl-thread-actions"><summary>{{ trans('private-messages::actions') }}</summary><div class="module-action-row"><form method="post" action="/messages/users/{{ thread.other.id }}/block"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>{{ trans('private-messages::block', {name: thread.other.username}) }}</button></form><form method="post" action="/messages/{{ thread.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="danger-button">{{ trans('private-messages::remove') }}</button></form></div></details>
+        </div>
+    </div>
+</section>
+{% endblock %}

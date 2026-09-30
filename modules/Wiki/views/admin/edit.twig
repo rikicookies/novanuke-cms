@@ -1,0 +1,45 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ page.id|default(false) ? trans('wiki::admin.editor.edit_title') : trans('wiki::admin.editor.create_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-wiki-admin">
+    {% set editor_title = page.id|default(false) ? trans('wiki::admin.editor.edit') : trans('wiki::admin.editor.create') %}
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('wiki::index.title'), url: '/admin/wiki'}, {label: editor_title}]} only %}
+    {% include 'components/admin-page-heading.twig' with {eyebrow: trans('wiki::index.title'), title: editor_title, description: page.id|default(false) ? trans('wiki::admin.editor.edit_help') : trans('wiki::admin.editor.create_help')} only %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    {% if notice %}<div class="notice-message">{{ notice }}</div>{% endif %}
+    <form class="news-editor" method="post" action="/admin/wiki/save">
+        <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ page.id|default('') }}">
+        <div class="form-grid"><label>{{ trans('wiki::admin.editor.title') }}<input name="title" required maxlength="200" value="{{ page.title|default('') }}"></label><label>{{ trans('wiki::admin.editor.path') }}<input name="path" required maxlength="240" pattern="[a-z0-9]+(-[a-z0-9]+)*(:[a-z0-9]+(-[a-z0-9]+)*)*" value="{{ page.path|default('') }}" placeholder="guides:getting-started"><small>{{ trans('wiki::admin.editor.path_help') }}</small></label></div>
+        <section class="dashboard-card wiki-link-helper">
+            <h2>{{ trans('wiki::admin.editor.link_heading') }}</h2>
+            <div class="form-grid"><label>{{ trans('wiki::admin.editor.link_text') }}<input type="text" maxlength="200" placeholder="{{ trans('wiki::admin.editor.link_text_placeholder') }}" data-wiki-link-label></label><label>{{ trans('wiki::admin.editor.path') }}<input type="text" maxlength="240" placeholder="guides:installation" data-wiki-link-path data-invalid-message="{{ trans('wiki::admin.js.invalid_path') }}"></label></div>
+            <button class="content-action" type="button" data-wiki-link-insert>{{ trans('wiki::admin.editor.insert_link') }}</button>
+            <small>{{ trans('wiki::admin.editor.link_help') }}</small>
+        </section>
+        <div class="wide-field wiki-editor"><label>Markdown</label><div class="wiki-editor-toolbar" role="toolbar" aria-label="{{ trans('wiki::admin.editor.toolbar') }}"><button class="content-action" type="button" data-wiki-wrap="**|**" title="{{ trans('wiki::admin.editor.bold') }}"><strong>B</strong></button><button class="content-action" type="button" data-wiki-wrap="*|*" title="{{ trans('wiki::admin.editor.italic') }}"><em>I</em></button><button class="content-action" type="button" data-wiki-prefix="## " title="{{ trans('wiki::admin.editor.heading') }}">H2</button><button class="content-action" type="button" data-wiki-prefix="> " title="{{ trans('wiki::admin.editor.quote') }}">❯</button><button class="content-action" type="button" data-wiki-prefix="- " title="{{ trans('wiki::admin.editor.list') }}">•</button><button class="content-action" type="button" data-wiki-prefix="- [ ] " title="{{ trans('wiki::admin.editor.task') }}">☐</button><button class="content-action" type="button" data-wiki-wrap="`|`" title="{{ trans('wiki::admin.editor.code') }}">&lt;/&gt;</button><button class="content-action" type="button" data-wiki-insert="| Column | Column |\n| --- | --- |\n| Value | Value |" title="{{ trans('wiki::admin.editor.table') }}">▦</button></div><textarea name="content" rows="22" required data-wiki-editor>{{ page.content|default('') }}</textarea><small>{{ trans('wiki::admin.editor.markdown_help') }}</small></div>
+        <div class="form-grid"><label>{{ trans('wiki::admin.status') }}<select name="status"><option value="draft">{{ trans('wiki::admin.status.draft') }}</option>{% if can_publish %}<option value="published" {{ page.status|default('draft') == 'published' ? 'selected' : '' }}>{{ trans('wiki::admin.status.published') }}</option>{% endif %}</select></label><label>{{ trans('wiki::admin.audience') }}<select name="audience"><option value="public">{{ trans('wiki::admin.audience.public') }}</option><option value="member" {{ page.audience|default('public') == 'member' ? 'selected' : '' }}>{{ trans('wiki::admin.audience.member') }}</option><option value="vip" {{ page.audience|default('public') == 'vip' ? 'selected' : '' }}>{{ trans('wiki::admin.audience.vip') }}</option></select></label></div>
+        <label><input type="checkbox" name="comments_enabled" value="1" {{ page.comments_enabled|default(0) ? 'checked' : '' }}> {{ trans('wiki::admin.editor.allow_comments') }}</label>
+        <div class="context-actions">
+            <button type="submit">{{ trans('wiki::admin.editor.save') }}</button>
+            <button class="content-action" type="submit" formaction="/admin/wiki/preview" formmethod="post" formtarget="_blank">{{ trans('wiki::admin.editor.preview') }}</button>
+        </div>
+    </form>
+    {% if page.id|default(false) %}
+        <section class="dashboard-card wiki-attachments-admin">
+            <h2>{{ trans('wiki::attachments.title') }}</h2>
+            {% if attachment_message %}<div class="notice-message">{{ attachment_message }}</div>{% endif %}
+            {% if attachment_error %}<div class="form-errors"><ul><li>{{ attachment_error }}</li></ul></div>{% endif %}
+            <form method="post" action="/admin/wiki/{{ page.id }}/attachments" enctype="multipart/form-data">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <label>{{ trans('wiki::admin.attachments.file') }}<input type="file" name="attachment" accept=".pdf,.txt,.md,.zip,.png,.jpg,.jpeg,.webp" required></label>
+                <small>{{ trans('wiki::admin.attachments.help') }}</small>
+                <button type="submit">{{ trans('wiki::admin.attachments.upload') }}</button>
+            </form>
+            <ul>{% for attachment in attachments %}<li><a href="/wiki/attachments/{{ attachment.id }}">{{ attachment.original_name }}</a> <small>{{ trans('wiki::attachments.size', {size: attachment.file_size}) }}</small><div><small>{{ trans('wiki::admin.attachments.link') }}</small> <code>{{ attachment.markdown_link }}</code> <button class="content-action" type="button" data-wiki-insert="{{ attachment.markdown_link }}">{{ trans('wiki::admin.attachments.insert_link') }}</button>{% if attachment.markdown_image %}<br><small>{{ trans('wiki::admin.attachments.image') }}</small> <code>{{ attachment.markdown_image }}</code> <button class="content-action" type="button" data-wiki-insert="{{ attachment.markdown_image }}">{{ trans('wiki::admin.attachments.insert_image') }}</button>{% endif %}</div><form class="inline-form" method="post" action="/admin/wiki/{{ page.id }}/attachments/{{ attachment.id }}/delete" onsubmit="return confirm('{{ trans('wiki::admin.attachments.delete_confirm')|e('js') }}')"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="confirm_delete" value="1"><button class="danger-button" type="submit">{{ trans('wiki::admin.delete') }}</button></form></li>{% else %}<li>{{ trans('wiki::admin.attachments.empty') }}</li>{% endfor %}</ul>
+        </section>
+    {% endif %}
+    {% if page.id|default(false) %}<nav class="context-actions"><a href="/wiki/{{ page.path }}">{{ trans('wiki::admin.editor.view') }}</a><a href="/admin/wiki/{{ page.id }}/history">{{ trans('wiki::admin.editor.revisions') }}</a><a href="/admin/wiki/{{ page.id }}/export">{{ trans('wiki::admin.editor.export') }}</a></nav><form class="delete-block-form" method="post" action="/admin/wiki/{{ page.id }}/delete" onsubmit="return confirm('{{ trans('wiki::admin.editor.delete_confirm')|e('js') }}')"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><input type="checkbox" name="confirm_delete" value="1" required> {{ trans('wiki::admin.editor.confirm_delete') }}</label><button class="danger-button" type="submit">{{ trans('wiki::admin.editor.delete_page') }}</button></form>{% endif %}
+</section>
+<script src="/wiki-assets/editor.js" defer></script>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% import 'partials/icon.twig' as icons %}
+{% import 'menus/navigation.twig' as navigation %}
+<aside class="nova-sidebar" id="nova-primary-sidebar" data-sidebar>
+    <div class="nova-sidebar-heading"><span class="nova-sidebar-icon">{{ icons.render('compass', theme.asset_base) }}</span><strong>{{ trans('common.navigation') }}</strong></div>
+    <nav aria-label="{{ trans('common.primary_navigation') }}">
+        {{ navigation.render(menus.primary|default([]), 0, theme.asset_base) }}
+    </nav>
+</aside>

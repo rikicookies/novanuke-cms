@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{ cms_locale|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/app.css">
+    {% block meta %}{% if cms_description|default('') %}<meta name="description" content="{{ cms_description }}">{% endif %}{% endblock %}
+</head>
+<body>
+    {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}
+    <header class="site-header">
+        <a class="brand" href="/">{{ cms_name|default('NovaNuke') }}</a>
+        {% import "menus/navigation.twig" as navigation %}<nav aria-label="{{ trans('common.primary_navigation') }}">{{ navigation.render(menus.primary|default([])) }}</nav>
+        {% if current_user %}
+            {% if notification_unread_count is defined %}<a href="/notifications">{{ trans('notifications::nav') }}{% if notification_unread_count > 0 %} ({{ notification_unread_count }}){% endif %}</a>{% endif %}
+            <a href="/account/profile">{{ trans('account.settings') }}</a>
+        {% endif %}
+    </header>
+    <main class="page-shell">
+        {% include "blocks/region.twig" with {items: blocks['before-content']|default([]), position: 'before-content'} %}
+        <div class="site-content-columns {{ blocks['left-sidebar']|default([]) ? 'has-left' : '' }} {{ blocks['right-sidebar']|default([]) ? 'has-right' : '' }}">
+            {% if blocks['left-sidebar']|default([]) %}<aside>{% include "blocks/region.twig" with {items: blocks['left-sidebar'], position: 'left-sidebar'} %}</aside>{% endif %}
+            <section class="site-main-content">{% block content %}{% endblock %}</section>
+            {% if blocks['right-sidebar']|default([]) %}<aside>{% include "blocks/region.twig" with {items: blocks['right-sidebar'], position: 'right-sidebar'} %}</aside>{% endif %}
+        </div>
+        {% include "blocks/region.twig" with {items: blocks['after-content']|default([]), position: 'after-content'} %}
+    </main>
+    {% include "blocks/region.twig" with {items: blocks['footer']|default([]), position: 'footer'} %}
+</body>
+</html>

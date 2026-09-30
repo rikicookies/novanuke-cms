@@ -1,0 +1,23 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('statistics::public.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-statistics-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('statistics::navigation.label')}]} only %}
+  <header class="nl-statistics-hero">
+    <div><span class="nl-statistics-kicker">{{ trans('statistics::public.eyebrow') }}</span><h1>{{ trans('statistics::public.title') }}</h1><p>{{ trans('statistics::public.description') }}</p></div>
+    <div class="nl-statistics-hero-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  </header>
+  <div class="nl-statistics-grid">
+    <article class="nl-stat-card is-blue"><span class="nl-stat-icon" aria-hidden="true">U</span><div><strong>{{ summary.registered_users|default(0) }}</strong><span>{{ trans('statistics::metric.registered_users') }}</span></div></article>
+    <article class="nl-stat-card is-violet"><span class="nl-stat-icon" aria-hidden="true">N</span><div><strong>{{ summary.published_news|default(0) }}</strong><span>{{ trans('statistics::metric.published_news') }}</span></div></article>
+    <article class="nl-stat-card is-green"><span class="nl-stat-icon" aria-hidden="true">C</span><div><strong>{{ summary.approved_comments|default(0) }}</strong><span>{{ trans('statistics::metric.approved_comments') }}</span></div></article>
+    <article class="nl-stat-card is-amber"><span class="nl-stat-icon" aria-hidden="true">D</span><div><strong>{{ summary.downloads|default(0) }}</strong><span>{{ trans('statistics::metric.downloads') }}</span></div></article>
+    <article class="nl-stat-card is-cyan"><span class="nl-stat-icon" aria-hidden="true">↗</span><div><strong>{{ summary.views_30_days|default(0) }}</strong><span>{{ trans('statistics::metric.views_30_days') }}</span></div></article>
+  </div>
+  <section class="nl-statistics-section">
+    <div class="nl-statistics-heading"><div><span class="nl-statistics-section-icon" aria-hidden="true">▥</span></div><div><h2>{{ trans('statistics::public.popular_sections') }}</h2><p>{{ trans('statistics::public.privacy_help') }}</p></div></div>
+    {% if sections %}<div class="nl-statistics-list">{% for item in sections %}<article><div><strong>{{ item.section }}</strong><span>{{ trans('statistics::table.views') }}</span></div><b>{{ item.views }}</b></article>{% endfor %}</div>
+    {% else %}<div class="nl-statistics-empty">{% include 'components/empty-state.twig' with {title: trans('statistics::empty.title'), message: trans('statistics::empty.message')} only %}</div>{% endif %}
+  </section>
+</section>
+{% endblock %}

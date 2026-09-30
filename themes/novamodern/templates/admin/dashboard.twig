@@ -1,0 +1,59 @@
+{% extends "layouts/default.twig" %}
+{% import 'partials/icon.twig' as icons %}
+{% block title %}{{ trans('admin.dashboard.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nova-dashboard">
+    <header class="nova-dashboard-heading">
+        <div><p class="eyebrow">{{ trans('admin.title') }}</p><h1>{{ trans('admin.dashboard.hello', {username: user.username}) }}</h1><p>{{ trans('admin.dashboard.overview', {site_name: cms_name|default('NovaNuke')}) }}</p></div>
+        <span class="badge">NovaNuke {{ cms_version }}</span>
+    </header>
+
+    {% if system_warnings %}
+        <div class="alert alert-error"><strong>{{ trans('admin.dashboard.configuration_warnings') }}</strong><ul>{% for warning in system_warnings %}<li>{{ warning }}</li>{% endfor %}</ul><a href="/admin/system">{{ trans('admin.dashboard.review_system') }}</a></div>
+    {% endif %}
+
+    {% set create_routes = {'/admin/news':'/admin/news/new','/admin/pages':'/admin/pages/new','/admin/downloads':'/admin/downloads/new','/admin/web-links':'/admin/web-links/new'} %}
+    <nav class="nova-quick-actions" aria-label="{{ trans('admin.dashboard.quick_actions') }}">
+        {% for group in admin_navigation %}
+            {% for item in group.items %}
+                {% if create_routes[item.url]|default(null) %}
+                    <a href="{{ create_routes[item.url] }}">{{ icons.render(item.icon, theme.asset_base) }}<span>{{ trans('admin.dashboard.create_named', {name: trans(item.label)}) }}</span></a>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </nav>
+
+    <div class="dashboard-grid dashboard-metrics">
+        {% for card in dashboard.cards %}
+            <article><strong>{{ card.value }}</strong><span>{{ trans(card.label) }}</span><a href="{{ card.url }}">{{ trans('admin.dashboard.manage') }}</a></article>
+        {% else %}
+            <article><strong>{{ cms_version }}</strong><span>{{ trans('admin.dashboard.core_release') }}</span></article>
+        {% endfor %}
+        {% if dashboard.module_status %}
+            <article><strong>{{ dashboard.module_status.enabled }} / {{ dashboard.module_status.detected }}</strong><span>{{ trans('admin.dashboard.enabled_modules') }}</span>{% if dashboard.module_status.issues %}<small>{{ trans('admin.dashboard.issue_count', {count: dashboard.module_status.issues}) }}</small>{% endif %}<a href="/admin/modules">{{ trans('admin.dashboard.review') }}</a></article>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-sections">
+        {% if dashboard.recent_content %}
+            <section><h2>{{ trans('admin.dashboard.recent_content') }}</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('admin.dashboard.type') }}</th><th>{{ trans('admin.dashboard.content_title') }}</th><th>{{ trans('admin.dashboard.status') }}</th><th>{{ trans('admin.dashboard.created') }}</th></tr></thead><tbody>{% for item in dashboard.recent_content %}<tr><td>{{ trans(item.type) }}</td><td><a href="{{ item.admin_url }}">{{ item.title }}</a></td><td>{{ item.status }}</td><td>{{ item.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div></section>
+        {% endif %}
+        {% if dashboard.recent_users %}
+            <section><h2>{{ trans('admin.dashboard.recent_users') }}</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('admin.dashboard.user') }}</th><th>{{ trans('admin.dashboard.status') }}</th><th>{{ trans('admin.dashboard.registered') }}</th></tr></thead><tbody>{% for account in dashboard.recent_users %}<tr><td><a href="/admin/users/{{ account.id }}">{{ account.username }}</a></td><td>{{ account.status }}</td><td>{{ account.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div></section>
+        {% endif %}
+        {% if dashboard.recent_activity %}
+            <section><h2>{{ trans('admin.dashboard.recent_activity') }}</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('admin.dashboard.actor') }}</th><th>{{ trans('admin.dashboard.action') }}</th><th>{{ trans('admin.dashboard.subject') }}</th><th>{{ trans('admin.dashboard.date') }}</th></tr></thead><tbody>{% for event in dashboard.recent_activity %}<tr><td>{{ event.actor_username|default(trans('admin.dashboard.system')) }}</td><td>{{ event.action }}</td><td>{{ event.subject_type|default('—') }}</td><td>{{ event.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div><p><a href="/admin/logs">{{ trans('admin.dashboard.view_logs') }}</a></p></section>
+        {% endif %}
+    </div>
+
+    <section class="nova-dashboard-navigation">
+        <h2>{{ trans('admin.title') }}</h2>
+        <div class="nova-dashboard-groups">
+        {% for group in admin_navigation %}
+            <section><h3>{{ trans(group.label) }}</h3><nav>{% for item in group.items %}<a href="{{ item.url }}">{{ icons.render(item.icon, theme.asset_base) }}<span>{{ trans(item.label) }}</span></a>{% endfor %}</nav></section>
+        {% endfor %}
+        </div>
+    </section>
+    <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">{{ trans('common.sign_out') }}</button></form>
+</section>
+{% endblock %}

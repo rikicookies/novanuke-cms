@@ -1,0 +1,70 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('media::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-media-admin">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('media::title')}]} only %}
+
+  <header class="nn-media-head">
+    <div><span class="nn-page-eyebrow">{{ trans('media::eyebrow') }}</span><h1>{{ trans('media::admin.title') }}</h1><p>{{ trans('media::admin.description') }}</p></div>
+    <button class="btn btn-primary nn-btn-compact" type="button" data-media-upload-toggle><i class="ph ph-upload-simple"></i>{{ trans('media::upload') }}</button>
+  </header>
+
+  {% if message %}<div class="nn-alert nn-alert-success"><i class="ph ph-check-circle"></i><div>{{ message }}</div></div>{% endif %}
+  {% if error %}<div class="nn-alert nn-alert-danger"><i class="ph ph-warning-circle"></i><div>{{ error }}</div></div>{% endif %}
+
+  <div class="nn-media-stats">
+    <article class="nn-stat-card"><span class="nn-stat-icon is-blue"><i class="ph ph-images"></i></span><div><span>{{ trans('media::admin.library') }}</span><strong>{{ images|length }}</strong><small>{{ trans('media::admin.library_help') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-green"><i class="ph ph-file-image"></i></span><div><span>{{ trans('media::admin.formats') }}</span><strong>JPEG · PNG · WebP</strong><small>{{ trans('media::admin.formats_help') }}</small></div></article>
+    <article class="nn-stat-card"><span class="nn-stat-icon is-violet"><i class="ph ph-hard-drives"></i></span><div><span>{{ trans('media::admin.max_size') }}</span><strong>10 MB</strong><small>{{ trans('media::admin.max_size_help') }}</small></div></article>
+  </div>
+
+  <section class="nn-panel nn-media-upload-panel" data-media-upload-panel hidden>
+    <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('media::admin.new_asset') }}</span><h2>{{ trans('media::upload') }}</h2><p>{{ trans('media::upload_help') }}</p></div><button class="nn-icon-btn" type="button" data-media-upload-close aria-label="{{ trans('media::admin.close') }}"><i class="ph ph-x"></i></button></header>
+    <form class="nn-media-upload-form" method="post" action="/admin/media/upload" enctype="multipart/form-data">
+      <input type="hidden" name="_token" value="{{ csrf_token }}">
+      <label class="nn-media-dropzone"><i class="ph ph-image-square"></i><strong>{{ trans('media::admin.choose_image') }}</strong><span>{{ trans('media::admin.choose_image_help') }}</span><input type="file" name="image" accept="image/jpeg,image/png,image/webp" required></label>
+      <div class="nn-media-form-grid"><label><span>{{ trans('media::metadata_title') }}</span><input class="form-control" name="title" maxlength="160" placeholder="{{ trans('media::admin.title_placeholder') }}"></label><label><span>{{ trans('media::alt_text') }}</span><input class="form-control" name="alt_text" maxlength="255" placeholder="{{ trans('media::admin.alt_placeholder') }}"></label></div>
+      <div class="nn-form-actions"><button class="btn btn-primary" type="submit"><i class="ph ph-upload-simple"></i>{{ trans('media::upload') }}</button><button class="btn btn-light" type="button" data-media-upload-close>{{ trans('media::admin.cancel') }}</button></div>
+    </form>
+  </section>
+
+  <section class="nn-panel nn-media-library">
+    <header class="nn-panel-head"><div><span class="nn-panel-kicker">{{ trans('media::admin.assets') }}</span><h2>{{ trans('media::admin.library') }}</h2><p>{{ trans('media::count', {count: images|length}) }}</p></div><span class="nn-count-pill">{{ images|length }}</span></header>
+    {% if images %}
+      <div class="nn-media-grid">
+      {% for image in images %}
+        <article class="nn-media-card">
+          <div class="nn-media-preview"><img src="{{ image.public_path }}" alt="{{ image.alt_text|default('',true) }}" loading="lazy"><span class="nn-media-size">{{ image.width }} × {{ image.height }}</span></div>
+          <div class="nn-media-card-body">
+            <div class="nn-media-card-title"><div><strong>{{ image.title|default(image.original_name,true) }}</strong><span>{{ image.original_name }}</span></div><span class="nn-status-badge is-active">{{ (image.file_size / 1024)|round }} KB</span></div>
+            <div class="nn-media-meta"><span><i class="ph ph-user"></i>{{ image.username }}</span></div>
+            <div class="nn-media-url"><input class="form-control" readonly value="{{ image.public_path }}" data-media-url><button class="nn-icon-btn" type="button" data-media-copy title="{{ trans('media::admin.copy_url') }}"><i class="ph ph-copy"></i></button></div>
+            <details class="nn-media-details">
+              <summary><span><i class="ph ph-pencil-simple"></i>{{ trans('media::admin.edit_metadata') }}</span><i class="ph ph-caret-down"></i></summary>
+              <form method="post" action="/admin/media/{{ image.id }}/update">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <label><span>{{ trans('media::metadata_title') }}</span><input class="form-control" name="title" maxlength="160" value="{{ image.title|default('',true) }}"></label>
+                <label><span>{{ trans('media::alt_text') }}</span><input class="form-control" name="alt_text" maxlength="255" value="{{ image.alt_text|default('',true) }}"></label>
+                <button class="btn btn-primary nn-btn-compact" type="submit"><i class="ph ph-floppy-disk"></i>{{ trans('media::save') }}</button>
+              </form>
+            </details>
+            <details class="nn-media-details nn-media-danger">
+              <summary><span><i class="ph ph-trash"></i>{{ trans('media::admin.delete_asset') }}</span><i class="ph ph-caret-down"></i></summary>
+              <form method="post" action="/admin/media/{{ image.id }}/delete">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <p>{{ trans('media::admin.delete_help') }}</p>
+                <label class="nn-check-row"><input type="checkbox" name="confirm_delete" value="1" required><span>{{ trans('media::confirm_delete') }}</span></label>
+                <button class="btn btn-danger nn-btn-compact" type="submit"><i class="ph ph-trash"></i>{{ trans('media::delete') }}</button>
+              </form>
+            </details>
+          </div>
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="nn-media-empty"><span class="nn-stat-icon is-blue"><i class="ph ph-images-square"></i></span><h3>{{ trans('media::empty') }}</h3><p>{{ trans('media::empty_help') }}</p><button class="btn btn-primary nn-btn-compact" type="button" data-media-upload-toggle>{{ trans('media::upload') }}</button></div>
+    {% endif %}
+  </section>
+</section>
+<script src="/assets/admin/limitless/js/media-admin.js?v=1" defer></script>
+{% endblock %}

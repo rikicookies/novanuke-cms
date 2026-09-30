@@ -1,0 +1,31 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('news::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="news-page news-portal">
+{% include 'components/breadcrumbs.twig' with {items: [{label: trans('news::title')}]} only %}
+{% set header_actions = manage_url ? [{label: trans('news::manage'), url: manage_url}, {label: 'RSS', url: '/news/rss.xml'}] : [{label: 'RSS', url: '/news/rss.xml'}] %}
+{% include 'components/page-header.twig' with {eyebrow: trans('news::latest'), title: trans('news::title'), description: trans('news::description'), actions: header_actions} only %}
+<nav class="category-links news-categories"><a href="/news">{{ trans('news::all') }}</a>{% for category in categories %}<a href="/news/category/{{ category.slug }}">{{ category.name }}</a>{% endfor %}</nav>
+{% if result.items|length %}
+{% set featured = result.items|first %}
+<article class="news-lead-card">
+    <div class="news-lead-copy">
+        <div class="news-kicker">{% if featured.is_featured %}<span class="badge badge-active">{{ trans('news::featured') }}</span>{% endif %}<span>{{ featured.category_name|default(trans('news::latest'), true) }}</span></div>
+        <h2><a href="/news/{{ featured.slug }}">{{ featured.title }}</a></h2>
+        <div class="news-summary">{{ featured.summary_html }}</div>
+        <div class="news-meta"><span>{{ trans('news::by', {author: featured.username}) }}</span><span>{{ featured.published_at|date(cms_date_format, cms_timezone) }}</span></div>
+        <a class="news-read-more" href="/news/{{ featured.slug }}">{{ trans('news::read') }} →</a>
+    </div>
+</article>
+{% if result.items|length > 1 %}<div class="news-section-heading"><div><p class="eyebrow">{{ trans('news::more') }}</p><h2>{{ trans('news::latest_from') }}</h2></div><span>{{ trans('news::published', {count: result.total}) }}</span></div>{% endif %}
+<div class="news-grid">{% for article in result.items|slice(1) %}<article class="news-card">
+    <div class="news-card-top"><span class="news-category">{{ article.category_name|default(trans('news::uncategorized'), true) }}</span>{% if article.is_featured %}<span class="badge badge-active">{{ trans('news::featured') }}</span>{% endif %}</div>
+    <h2><a href="/news/{{ article.slug }}">{{ article.title }}</a></h2>
+    <div class="news-summary">{{ article.summary_html }}</div>
+    <div class="news-meta"><span>{{ article.username }}</span><span>{{ article.published_at|date(cms_date_format, cms_timezone) }}</span></div>
+    <a class="news-card-link" href="/news/{{ article.slug }}" aria-label="{{ trans('news::read_named', {title: article.title}) }}">{{ trans('news::read_more') }} →</a>
+</article>{% endfor %}</div>
+{% else %}{% include 'components/empty-state.twig' with {title: trans('news::empty'), message: trans('news::empty_help')} only %}{% endif %}
+{% include 'components/pagination.twig' with {current_page: result.page, total_pages: result.pages, url_template: '?page={page}', label: trans('news::pagination')} only %}
+</section>
+{% endblock %}

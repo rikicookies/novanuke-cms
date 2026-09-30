@@ -1,0 +1,16 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Email verification — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.verification.eyebrow') }}</p>
+    {% if verified %}
+        <h1>{{ trans('auth.verification.success_title') }}</h1>
+        <p>{{ trans('auth.verification.success_message') }}</p>
+        <a class="install-button link-button" href="/login">{{ trans('common.sign_in') }}</a>
+    {% else %}
+        <h1>{{ trans('auth.verification.invalid_title') }}</h1>
+        <p>{{ trans('auth.verification.invalid_message') }}</p>
+        <a class="auth-link" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>
+    {% endif %}
+</section>
+{% endblock %}

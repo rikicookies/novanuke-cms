@@ -1,0 +1,5 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.deleted.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="dashboard-card"><p class="eyebrow">{{ trans('account.settings') }}</p><h1>{{ trans('account.deleted.title') }}</h1><p>{{ trans('account.deleted.message') }}</p><p><a href="/">{{ trans('common.home') }}</a></p></section>
+{% endblock %}

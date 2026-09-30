@@ -1,0 +1,17 @@
+{
+    "name": "Welcome",
+    "slug": "welcome",
+    "version": "1.1.0",
+    "api_version": "1.0",
+    "description": "A small official module used to verify the NovaNuke module lifecycle.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Welcome\\src\\WelcomeModule",
+    "cms_min_version": "0.1.0-alpha.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "welcome.view",
+        "welcome.manage"
+    ],
+    "navigation": {"label": "modules.navigation.welcome", "url": "/welcome", "icon": "home", "order": 90, "audience": "public", "public_landing": true}
+}

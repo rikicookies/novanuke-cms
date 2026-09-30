@@ -1,0 +1,41 @@
+{% macro branch(items, content_type, content_id, csrf_token, return_to, current_user, depth) %}
+    {% import _self as tree %}
+    {% for comment in items %}
+        <article class="comment comment-depth-{{ depth }}" id="comment-{{ comment.id }}">
+            <header><strong>{{ comment.username|default(comment.guest_name|default(trans('comments::former_member'), true), true) }}</strong><small>{{ comment.created_at|date(cms_date_format, cms_timezone) }}{% if comment.edited_at %} · {{ trans('comments::edited') }}{% endif %}</small></header>
+            <div class="comment-body">{{ comment.body_html }}</div>
+            <div class="comment-actions">
+                {% if current_user %}<form method="post" action="/comments/{{ comment.id }}/react" data-ajax-action data-ajax-replace="#comment-{{ comment.id }}" data-ajax-success="{{ trans('comments::reaction_updated') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}"><input type="hidden" name="reaction" value="like"><button type="submit" class="{{ comment.viewer_reaction == 'like' ? 'active' : '' }}">{{ trans('comments::like') }} · {{ comment.like_count }}</button></form><form method="post" action="/comments/{{ comment.id }}/react" data-ajax-action data-ajax-replace="#comment-{{ comment.id }}" data-ajax-success="{{ trans('comments::reaction_updated') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}"><input type="hidden" name="reaction" value="dislike"><button type="submit" class="{{ comment.viewer_reaction == 'dislike' ? 'active' : '' }}">{{ trans('comments::dislike') }} · {{ comment.dislike_count }}</button></form>{% else %}<span>{{ trans('comments::like') }} · {{ comment.like_count }}</span><span>{{ trans('comments::dislike') }} · {{ comment.dislike_count }}</span>{% endif %}
+                <details><summary>{{ trans('comments::reply') }}</summary>
+                    <form method="post" action="/comments/{{ content_type }}/{{ content_id }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}"><input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        {% if not current_user %}<label>{{ trans('comments::name') }}<input name="guest_name" required minlength="2" maxlength="100"></label>{% endif %}
+                        <label>{{ trans('comments::format') }}<select name="body_format"><option value="markdown">{{ trans('comments::markdown') }}</option><option value="html">{{ trans('comments::sanitized_html') }}</option></select></label><label>{{ trans('comments::reply_field') }}<textarea name="body" required minlength="2" maxlength="5000"></textarea></label><button type="submit">{{ trans('comments::submit_reply') }}</button>
+                    </form>
+                </details>
+                {% if current_user and comment.user_id == current_user.id %}<details><summary>{{ trans('comments::edit') }}</summary>
+                    <form method="post" action="/comments/{{ comment.id }}/edit"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}"><label>{{ trans('comments::format') }}<select name="body_format"><option value="markdown">{{ trans('comments::markdown') }}</option><option value="html" {{ comment.body_format == 'html' ? 'selected' : '' }}>{{ trans('comments::sanitized_html') }}</option></select></label><label>{{ trans('comments::comment') }}<textarea name="body" required minlength="2" maxlength="5000">{{ comment.body }}</textarea></label><button type="submit">{{ trans('comments::save') }}</button></form>
+                </details>{% endif %}
+                <details><summary>{{ trans('comments::report') }}</summary>
+                    <form method="post" action="/comments/{{ comment.id }}/report"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}"><label>{{ trans('comments::reason') }}<textarea name="reason" required minlength="5" maxlength="500"></textarea></label><button type="submit">{{ trans('comments::send_report') }}</button></form>
+                </details>
+            </div>
+            {% if comment.children %}<div class="comment-children">{{ tree.branch(comment.children, content_type, content_id, csrf_token, return_to, current_user, depth + 1) }}</div>{% endif %}
+        </article>
+    {% endfor %}
+{% endmacro %}
+{% import _self as tree %}
+<section class="comments-section" id="comments">
+    <header><p class="eyebrow">{{ trans('comments::eyebrow') }}</p><h2>{{ trans('comments::title') }}</h2></header>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><p>{{ error }}</p></div>{% endif %}
+    {% if current_user or guests_allowed %}
+        <form class="comment-form" method="post" action="/comments/{{ content_type }}/{{ content_id }}">
+            <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="return_to" value="{{ return_to }}">
+            {% if not current_user %}<label>{{ trans('comments::name') }}<input name="guest_name" required minlength="2" maxlength="100"></label>{% endif %}
+            <label>{{ trans('comments::format') }}<select name="body_format"><option value="markdown">{{ trans('comments::markdown') }}</option><option value="html">{{ trans('comments::sanitized_html') }}</option></select></label><label>{{ trans('comments::your_comment') }}<textarea name="body" required minlength="2" maxlength="5000"></textarea></label><button type="submit">{{ trans('comments::post_comment') }}</button>
+        </form>
+    {% else %}<p><a href="/login">{{ trans('comments::sign_in') }}</a> {{ trans('comments::sign_in_help') }}</p>{% endif %}
+    <div class="comment-list">{{ tree.branch(comments, content_type, content_id, csrf_token, return_to, current_user, 0) }}</div>
+    {% if comments is empty %}{% include 'components/empty-state.twig' with {title: trans('comments::empty'), message: trans('comments::empty_help')} only %}{% endif %}
+</section>

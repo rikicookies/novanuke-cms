@@ -1,0 +1,24 @@
+{
+    "name": "Downloads",
+    "slug": "downloads",
+    "version": "1.4.1",
+    "api_version": "1.0",
+    "description": "Secure local and external download catalog with categories, access control and reports.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Downloads\\src\\DownloadsModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "downloads.manage",
+        "downloads.publish"
+    ],
+    "navigation": {
+        "label": "modules.navigation.downloads",
+        "url": "/downloads",
+        "icon": "download",
+        "order": 30,
+        "audience": "public",
+        "public_landing": true
+    }
+}

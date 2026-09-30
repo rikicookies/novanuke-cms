@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="{{ cms_locale|default('en') }}" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{% block title %}{{ trans('admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/admin/limitless/icons/phosphor/styles.min.css?v=2">
+    <link rel="stylesheet" href="/assets/admin/limitless/css/limitless.min.css?v=2">
+    <link rel="stylesheet" href="/assets/admin/limitless/css/novanuke-admin.css?v=31">
+    {% block meta %}{% endblock %}
+    {% block styles %}{% endblock %}
+</head>
+<body class="nn-admin nn-admin-v2">
+<div class="nn-shell">
+    <header class="nn-topbar">
+        <a href="/admin" class="nn-brand" aria-label="{{ trans('admin.ui.brand_aria') }}">
+            <span class="nn-brand-mark">N</span>
+            <span class="nn-brand-copy"><strong>NovaNuke</strong><small>{{ trans('admin.ui.cms_subtitle') }}</small></span>
+        </a>
+        <button type="button" class="nn-mobile-menu sidebar-mobile-main-toggle" aria-label="{{ trans('admin.ui.toggle_navigation') }}"><i class="ph-list"></i></button>
+        <div class="nn-topbar-spacer"></div>
+        <div class="nn-topbar-actions">
+            <a href="/" class="nn-icon-button" title="{{ trans('admin.ui.view_site') }}" aria-label="{{ trans('admin.ui.view_site') }}"><i class="ph-arrow-square-out"></i></a>
+            {% if current_user and cms_locales|default([])|length > 1 %}
+                <details class="nn-language-menu">
+                    <summary class="nn-icon-button" title="{{ trans('admin.ui.language') }}" aria-label="{{ trans('admin.ui.language') }}">
+                        <span class="nn-language-flag">{% if cms_locale|default('en') == 'es' %}<img src="/assets/admin/flags/mx.svg" alt="">{% elseif cms_locale|default('en') == 'en' %}<img src="/assets/admin/flags/us.svg" alt="">{% else %}<i class="ph-globe"></i>{% endif %}</span>
+                    </summary>
+                    <div class="nn-language-dropdown">
+                        <div class="nn-language-title">{{ trans('admin.ui.language') }}</div>
+                        {% for code, label in cms_locales %}
+                            <form method="post" action="/account/locale">
+                                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="locale" value="{{ code }}">
+                                <button type="submit" class="nn-language-option{% if cms_locale|default('en') == code %} active{% endif %}">
+                                    <span class="nn-language-option-flag">{% if code == 'es' %}<img src="/assets/admin/flags/mx.svg" alt="">{% elseif code == 'en' %}<img src="/assets/admin/flags/us.svg" alt="">{% else %}<i class="ph-globe"></i>{% endif %}</span>
+                                    <span>{{ label }}</span>
+                                    {% if cms_locale|default('en') == code %}<i class="ph-check"></i>{% endif %}
+                                </button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endif %}
+            {% if notification_unread_count is defined %}
+                <a href="/notifications" class="nn-icon-button nn-notifications" title="{{ trans('notifications::nav') }}" aria-label="{{ trans('notifications::nav') }}">
+                    <i class="ph-bell"></i>{% if notification_unread_count > 0 %}<span>{{ notification_unread_count }}</span>{% endif %}
+                </a>
+            {% endif %}
+            {% if current_user %}
+                <a href="/account/profile" class="nn-account">
+                    <span class="nn-account-avatar">{{ current_user.username|slice(0,1)|upper }}</span>
+                    <span class="nn-account-copy"><strong>{{ current_user.username }}</strong><small>{{ trans('admin.ui.administrator') }}</small></span>
+                    <i class="ph-caret-down"></i>
+                </a>
+                <form method="post" action="/logout" class="nn-logout-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}">
+                    <button type="submit" class="nn-icon-button" title="{{ trans('common.sign_out') }}" aria-label="{{ trans('common.sign_out') }}"><i class="ph-sign-out"></i></button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <aside class="nn-sidebar sidebar sidebar-dark sidebar-main sidebar-expand-lg">
+        <div class="sidebar-content nn-sidebar-scroll">
+            <nav aria-label="{{ trans('admin.ui.administration') }}">
+                {% for group in admin_navigation|default([]) %}
+                    <div class="nn-nav-group">
+                        {% if group.slug != 'overview' %}<div class="nn-nav-label">{{ trans(group.label) }}</div>{% endif %}
+                        {% for item in group.items %}
+                            {% set icon = 'ph-squares-four' %}
+                            {% if item.icon == 'dashboard' %}{% set icon = 'ph-house' %}
+                            {% elseif item.icon == 'users' %}{% set icon = 'ph-users' %}
+                            {% elseif item.icon == 'badge' %}{% set icon = 'ph-crown' %}
+                            {% elseif item.icon == 'shield' %}{% set icon = 'ph-shield-check' %}
+                            {% elseif item.icon == 'palette' %}{% set icon = 'ph-palette' %}
+                            {% elseif item.icon == 'menu' %}{% set icon = 'ph-list-dashes' %}
+                            {% elseif item.icon == 'blocks' %}{% set icon = 'ph-layout' %}
+                            {% elseif item.icon == 'module' %}{% set icon = 'ph-puzzle-piece' %}
+                            {% elseif item.icon == 'settings' %}{% set icon = 'ph-gear' %}
+                            {% elseif item.icon == 'user-settings' %}{% set icon = 'ph-user-gear' %}
+                            {% elseif item.icon == 'logs' %}{% set icon = 'ph-list-magnifying-glass' %}
+                            {% elseif item.icon == 'system' %}{% set icon = 'ph-cpu' %}
+                            {% elseif item.icon == 'newspaper' %}{% set icon = 'ph-newspaper' %}
+                            {% elseif item.icon == 'page' %}{% set icon = 'ph-file-text' %}
+                            {% elseif item.icon == 'comments' %}{% set icon = 'ph-chats-circle' %}
+                            {% elseif item.icon == 'download' %}{% set icon = 'ph-download-simple' %}
+                            {% elseif item.icon == 'link' %}{% set icon = 'ph-link' %}
+                            {% elseif item.icon == 'search' %}{% set icon = 'ph-magnifying-glass' %}{% endif %}
+                            <a href="{{ item.url }}" class="nn-nav-item{% if item.active %} active{% endif %}"><i class="{{ icon }}"></i><span>{{ trans(item.label) }}</span></a>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="nn-sidebar-footer"><a href="/" class="nn-nav-item"><i class="ph-arrow-square-out"></i><span>{{ trans('admin.ui.view_site') }}</span></a></div>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="nn-main">
+        <div class="nn-workspace">{% block content %}{% endblock %}</div>
+        <footer class="nn-footer"><span>© {{ "now"|date("Y") }} NovaNuke</span><span>v{{ cms_version|default('') }}</span></footer>
+    </main>
+</div>
+<script src="/assets/admin/limitless/js/app.js?v=2"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

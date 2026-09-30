@@ -1,0 +1,19 @@
+{
+  "title": "Notificaciones",
+  "account": "Cuenta",
+  "mark_all": "Marcar todas como leídas",
+  "mark_read": "Marcar como leída",
+  "open": "Abrir",
+  "empty": "No tienes notificaciones.",
+  "nav": "Notificaciones",
+  "marked": "Se marcaron {count} notificación(es) como leídas.",
+  "unread_count": "{count} notificación(es) sin leer.",
+  "read": "Leída",
+  "unread": "Sin leer",
+  "marked_all": "Las notificaciones se marcaron como leídas.",
+  "marked_one": "La notificación se marcó como leída.",
+  "empty_help": "Las notificaciones nuevas de tu cuenta y del sitio aparecerán aquí.",
+  "error.csrf": "El token CSRF no es válido o ha caducado.",
+  "error.not_found": "No se encontró la notificación.",
+  "error.invalid_identifier": "El identificador de la notificación no es válido."
+}

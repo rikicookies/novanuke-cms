@@ -1,0 +1,71 @@
+{% extends "installer/base.twig" %}
+
+{% block title %}{{ trans('installer.install_title') }}{% endblock %}
+
+{% block content %}
+<section class="intro">
+    <p class="eyebrow">{{ trans('installer.eyebrow') }}</p>
+    <h1>{{ trans('installer.heading') }}</h1>
+    <p>{{ trans('installer.description') }}</p>
+</section>
+
+{% if errors %}
+<div class="alert alert-error" role="alert">
+    <strong>{{ trans('installer.needs_attention') }}</strong>
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<section class="panel">
+    <div class="panel-heading">
+        <div><span class="step">01</span><h2>{{ trans('installer.requirements') }}</h2></div>
+        <span class="status {{ requirements_passed ? 'pass' : 'fail' }}">{{ requirements_passed ? trans('installer.ready') : trans('installer.action_required') }}</span>
+    </div>
+    <div class="checks">
+        {% for check in checks %}
+            <div class="check {{ check.passed ? 'pass' : 'fail' }}">
+                <span aria-hidden="true">{{ check.passed ? '✓' : '×' }}</span>
+                <div><strong>{{ check.name }}</strong><small>{{ check.detail }}</small></div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<form method="post" action="/install" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token }}">
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">02</span><h2>{{ trans('installer.site') }}</h2></div></div>
+        <div class="form-grid">
+            <label class="wide">{{ trans('installer.site_name') }}<input name="site_name" value="{{ old.site_name }}" required maxlength="100"></label>
+            <label class="wide">{{ trans('installer.site_url') }}<input type="url" name="site_url" value="{{ old.site_url }}" required></label>
+            <label>{{ trans('installer.language') }}<select name="locale">{% for code, label in cms_locales %}<option value="{{ code }}" {% if old.locale == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label>{{ trans('installer.timezone') }}<select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}" {% if old.timezone == timezone %}selected{% endif %}>{{ timezone }}</option>{% endfor %}</select></label>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">03</span><h2>{{ trans('installer.database') }}</h2></div></div>
+        <p class="hint">{{ trans('installer.database_help') }}</p>
+        <div class="form-grid">
+            <label>{{ trans('installer.host') }}<input name="database_host" value="{{ old.database_host }}" required></label>
+            <label>{{ trans('installer.port') }}<input type="number" name="database_port" value="{{ old.database_port }}" min="1" max="65535" required></label>
+            <label class="wide">{{ trans('installer.database_name') }}<input name="database_name" value="{{ old.database_name }}" pattern="[A-Za-z0-9_]+" required></label>
+            <label>{{ trans('installer.username') }}<input name="database_username" value="{{ old.database_username }}" required></label>
+            <label>{{ trans('common.password') }}<input type="password" name="database_password" autocomplete="new-password"></label>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">04</span><h2>{{ trans('installer.super_admin') }}</h2></div></div>
+        <div class="form-grid">
+            <label>{{ trans('installer.username') }}<input name="admin_username" value="{{ old.admin_username }}" minlength="3" maxlength="32" required autocomplete="username"></label>
+            <label>{{ trans('common.email') }}<input type="email" name="admin_email" value="{{ old.admin_email }}" required autocomplete="email"></label>
+            <label>{{ trans('common.password') }}<input type="password" name="admin_password" minlength="12" required autocomplete="new-password"></label>
+            <label>{{ trans('auth.register.confirm_password') }}<input type="password" name="admin_password_confirmation" minlength="12" required autocomplete="new-password"></label>
+        </div>
+    </section>
+
+    <button class="install-button" type="submit" {% if not requirements_passed %}disabled{% endif %}>{{ trans('installer.submit') }}</button>
+</form>
+{% endblock %}

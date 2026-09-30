@@ -1,0 +1,15 @@
+{
+    "name": "Wiki",
+    "slug": "wiki",
+    "version": "2.2.0",
+    "api_version": "1.0",
+    "description": "A lightweight Markdown wiki with namespaces and safe online editing.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Wiki\\src\\WikiModule",
+    "cms_min_version": "0.2.0-alpha.23",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": ["wiki.edit", "wiki.publish"],
+    "events": ["sitemap.collecting"],
+    "navigation": {"label": "modules.navigation.wiki", "url": "/wiki", "icon": "wiki", "order": 60, "audience": "public", "public_landing": true}
+}

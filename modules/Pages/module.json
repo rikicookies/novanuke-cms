@@ -1,0 +1,28 @@
+{
+    "name": "Pages",
+    "slug": "pages",
+    "version": "1.5.3",
+    "api_version": "1.0",
+    "description": "Static and informational pages with publication, hierarchy and access control.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Pages\\src\\PagesModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "pages.edit",
+        "pages.publish"
+    ],
+    "events": [
+        "sitemap.collecting",
+        "media.usage.checking"
+    ],
+    "navigation": {
+        "label": "modules.navigation.pages",
+        "url": "/pages",
+        "icon": "pages",
+        "order": 20,
+        "audience": "public",
+        "public_landing": true
+    }
+}

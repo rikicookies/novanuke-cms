@@ -1,0 +1,15 @@
+{% import 'partials/icon.twig' as icons %}
+{% import 'menus/navigation.twig' as navigation %}
+<aside class="nova-sidebar nl-sidebar" id="nova-primary-sidebar" data-sidebar>
+    <div class="nl-sidebar-brand"><span class="nl-sidebar-cube">N</span><strong>{{ cms_name|default('NovaNuke') }}</strong></div>
+    <div class="nl-sidebar-label">{{ trans('common.navigation') }}</div>
+    <nav class="nl-primary-nav" aria-label="{{ trans('common.primary_navigation') }}">
+        {{ navigation.render(menus.primary|default([]), 0, theme.asset_base) }}
+    </nav>
+    <div class="nl-sidebar-note">
+        <span class="nl-sidebar-note-icon">✦</span>
+        <strong>{{ trans('theme::learn_title') }}</strong>
+        <p>{{ trans('theme::learn_text') }}</p>
+        <a href="/news">{{ trans('theme::explore') }} →</a>
+    </div>
+</aside>

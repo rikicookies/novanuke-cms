@@ -1,0 +1,23 @@
+{
+    "name": "Search",
+    "slug": "search",
+    "version": "1.1.0",
+    "api_version": "1.0",
+    "description": "Extensible, permission-aware search across NovaNuke content modules.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Search\\src\\SearchModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "search.manage"
+    ],
+    "navigation": {
+        "label": "modules.navigation.search",
+        "url": "/search",
+        "icon": "search",
+        "order": 50,
+        "audience": "public",
+        "public_landing": true
+    }
+}

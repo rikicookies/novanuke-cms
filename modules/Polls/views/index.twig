@@ -1,0 +1,22 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('polls::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="polls-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('polls::home'), url: '/'}, {label: trans('polls::title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('polls::eyebrow'), title: trans('polls::title'), description: trans('polls::description')} only %}
+    {% set status_labels = {'active': trans('polls::status.active'), 'closed': trans('polls::status.closed'), 'draft': trans('polls::status.draft')} %}
+    {% if polls %}
+    <div class="poll-list">
+        {% for poll in polls %}
+        <article>
+            <div class="surface-card-meta"><span class="badge {{ poll.status == 'active' ? 'badge-active' : '' }}">{{ status_labels[poll.status]|default(poll.status) }}</span><span>{{ trans('polls::votes', {count: poll.vote_count}) }}</span>{% if poll.ends_at %}<span>{{ trans('polls::ends', {date: poll.ends_at}) }}</span>{% endif %}</div>
+            <h2><a href="/polls/{{ poll.id }}">{{ poll.question }}</a></h2>
+            <div class="module-action-row"><a class="module-link-button" href="/polls/{{ poll.id }}">{{ poll.status == 'active' ? trans('polls::vote_results') : trans('polls::view_results') }}</a></div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+        {% include 'components/empty-state.twig' with {title: trans('polls::empty'), message: trans('polls::empty_help')} only %}
+    {% endif %}
+</section>
+{% endblock %}

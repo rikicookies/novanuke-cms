@@ -1,0 +1,14 @@
+{
+    "name": "SEO",
+    "slug": "seo",
+    "version": "1.1.0",
+    "api_version": "1.0",
+    "description": "Extensible XML sitemap, robots policy and public metadata support.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Seo\\src\\SeoModule",
+    "cms_min_version": "0.1.0-alpha.16",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [],
+    "events": ["sitemap.collecting"]
+}

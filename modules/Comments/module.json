@@ -1,0 +1,15 @@
+{
+    "name": "Comments",
+    "slug": "comments",
+    "version": "1.2.0",
+    "api_version": "1.0",
+    "description": "Reusable threaded comments, reports and moderation for NovaNuke content.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Comments\\src\\CommentsModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "comments.moderate"
+    ]
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="{{ cms_locale|default('en') }}" style="--nova-accent: {{ theme.settings.accent_color|default('#2563eb') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="{{ theme.asset_base }}/css/novalearn.css?v={{ theme.version|default('1')|url_encode }}">
+    {% if news_rss_url|default(null) %}<link rel="alternate" type="application/rss+xml" title="{{ cms_name|default('NovaNuke') }} — {{ trans('theme::footer_news') }}" href="{{ news_rss_url }}">{% endif %}
+    {% block meta %}{% if cms_description|default('') %}<meta name="description" content="{{ cms_description }}">{% endif %}{% endblock %}
+</head>
+<body class="nova-modern nova-public nova-learn" data-ajax-failed="{{ trans('common.ajax.failed') }}" data-ajax-refresh-failed="{{ trans('common.ajax.refresh_failed') }}" data-ajax-completed="{{ trans('common.ajax.completed') }}" data-ajax-attention="{{ trans('common.ajax.attention') }}" data-ajax-network-error="{{ trans('common.ajax.network_error') }}">
+    {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}
+    {% include 'partials/public-header.twig' %}
+    <div class="nl-shell">
+        {% include 'partials/public-sidebar.twig' %}
+        <main class="nova-public-main nl-main" id="main-content">
+            {% include "blocks/region.twig" with {items: blocks['before-content']|default([]), position: 'before-content'} %}
+            {# NovaLearn owns the public navigation in its navy sidebar. Legacy left-sidebar blocks
+               are intentionally not duplicated here. Right-sidebar remains a contextual rail. #}
+            {% set nl_right_blocks = blocks['right-sidebar']|default([]) %}
+            <div class="nl-stage{{ nl_right_blocks ? ' nl-stage-with-rail' : '' }}">
+                <section class="nova-page-content nl-page-content">{% block content %}{% endblock %}</section>
+                {% if nl_right_blocks %}
+                    <aside class="nl-context-rail" aria-label="{{ trans('theme::context') }}">
+                        {% include "blocks/region.twig" with {items: nl_right_blocks, position: 'right-sidebar'} %}
+                    </aside>
+                {% endif %}
+            </div>
+            {% include "blocks/region.twig" with {items: blocks['after-content']|default([]), position: 'after-content'} %}
+        </main>
+    </div>
+    {% include "blocks/region.twig" with {items: blocks['footer']|default([]), position: 'footer'} %}
+    {% include 'partials/public-footer.twig' %}
+    <div class="nova-nav-overlay" data-nav-overlay hidden></div>
+    <script src="{{ theme.asset_base }}/js/navigation.js?v={{ theme.version|default('1')|url_encode }}" defer></script>
+    <script src="/assets/js/progressive-actions.js" defer></script>
+</body>
+</html>

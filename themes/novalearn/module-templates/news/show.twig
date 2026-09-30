@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ article.seo_title|default(article.title, true) }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}{% set seo_title = article.seo_title|default(article.title, true) %}{% set seo_description = article.seo_description|default(article.summary_text, true) %}{% set canonical = cms_url ~ '/news/' ~ article.slug %}{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}<link rel="canonical" href="{{ canonical }}"><meta property="og:type" content="article"><meta property="og:title" content="{{ seo_title }}"><meta property="og:url" content="{{ canonical }}">{% if seo_description %}<meta property="og:description" content="{{ seo_description }}">{% endif %}{% if article.featured_image %}<meta property="og:image" content="{{ cms_url ~ article.featured_image }}">{% endif %}<meta name="twitter:card" content="{{ article.featured_image ? 'summary_large_image' : 'summary' }}"><meta property="article:published_time" content="{{ article.published_at|date('c', 'UTC') }}"><meta property="article:modified_time" content="{{ article.updated_at|date('c', 'UTC') }}">{% endblock %}
+{% block content %}
+<article class="nl-article nl-reading-page">
+    <div class="nl-reading-breadcrumbs">{% include 'components/breadcrumbs.twig' with {items: [{label: trans('news::title'), url: '/news'}, {label: article.category_name|default(trans('news::uncategorized'), true), url: article.category_slug ? '/news/category/' ~ article.category_slug : null}, {label: article.title}]} only %}</div>
+    <header class="nl-article-header">
+        <div class="nl-article-admin">{% include 'components/content-actions.twig' with {edit_url: edit_url|default(null), delete_url: delete_url|default(null), csrf_token: content_csrf_token|default(null), return_to: delete_return_to|default(null)} only %}</div>
+        <div class="nl-kicker">{% if article.category_name %}<span class="nl-category-pill">{{ article.category_name }}</span>{% endif %}{% if article.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('news::featured') }}</span>{% endif %}</div>
+        <h1>{{ article.title }}</h1>
+        <div class="nl-article-deck">{{ article.summary_html }}</div>
+        <div class="nl-article-byline"><span class="nl-avatar">{{ article.username|slice(0,1)|upper }}</span><div><strong>{{ article.username }}</strong><small>{{ article.published_at|date(cms_date_format, cms_timezone) }} <span>•</span> {{ trans('news::views', {count: article.view_count}) }}</small></div></div>
+        {% if article.tag_list %}<div class="nl-tag-row">{% for tag in article.tag_list %}<span>{{ tag }}</span>{% endfor %}</div>{% endif %}
+    </header>
+    {% if article.featured_image %}<figure class="nl-article-hero"><img src="{{ article.featured_image }}" alt=""></figure>{% endif %}
+    <div class="nl-reading-layout"><aside class="nl-reading-rail" aria-hidden="true"><span class="nl-reading-line"></span></aside><div class="article-content nl-article-content">{{ article.content_html }}</div></div>
+    <footer class="nl-article-footer"><a href="/news">← {{ trans('news::return') }}</a></footer>
+</article>
+{% if comments_available %}<section class="nl-comments">{% include '@comments/thread.twig' with {content_type: 'news', content_id: article.id, comments: comments, guests_allowed: comments_guests_allowed, csrf_token: comments_csrf_token, return_to: comments_return_to, message: comments_message, error: comments_error, current_user: comments_user} only %}</section>{% elseif article.comments_enabled %}<p class="comments-unavailable">{{ trans('news::comments_unavailable') }}</p>{% endif %}
+{% endblock %}

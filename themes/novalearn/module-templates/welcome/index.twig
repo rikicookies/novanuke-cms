@@ -1,0 +1,46 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ content.hero.title }} &mdash; {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-welcome-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: content.hero.title}]} only %}
+  <header class="nl-welcome-hero">
+    <div class="nl-welcome-hero-copy">
+      <span class="nl-welcome-kicker">{{ content.hero.eyebrow }}</span>
+      <h1>{{ content.hero.title }}</h1>
+      <p>{{ content.hero.description }}</p>
+      {% if links %}
+        <div class="nl-welcome-actions">
+          {% for link in links|slice(0, 2) %}
+            <a class="{{ loop.first ? 'nl-welcome-primary' : 'nl-welcome-secondary' }}" href="{{ link.url }}">{{ link.label }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    <div class="nl-welcome-orbit" aria-hidden="true"><span>N</span><i></i><b></b></div>
+  </header>
+  <section class="nl-welcome-story">
+    <div class="nl-welcome-story-lead"><span>01</span><strong>{{ content.feature.core.title }}</strong></div>
+    <div class="nl-welcome-story-copy"><p>{{ content.story.modern }}</p><p>{{ content.story.roots }}</p><p>{{ content.story.spirit }}</p></div>
+  </section>
+  <div class="nl-welcome-feature-grid">
+    <article><span>01</span><h2>{{ content.feature.core.title }}</h2><p>{{ content.feature.core.text }}</p></article>
+    <article><span>02</span><h2>{{ content.feature.web.title }}</h2><p>{{ content.feature.web.text }}</p></article>
+    <article><span>03</span><h2>{{ content.feature.pieces.title }}</h2><p>{{ content.feature.pieces.text }}</p></article>
+  </div>
+  <section class="nl-welcome-capabilities">
+    <div class="nl-welcome-section-copy"><span class="nl-welcome-kicker">{{ content.capabilities.eyebrow }}</span><h2>{{ content.capabilities.title }}</h2><p>{{ content.capabilities.description }}</p></div>
+    <ul>{% for key in ['news','downloads','wiki','users','audiences','extensions','search','operations'] %}<li><span aria-hidden="true">&#10003;</span>{{ content.capabilities[key] }}</li>{% endfor %}</ul>
+  </section>
+  <section class="nl-welcome-status">
+    <div class="nl-welcome-status-icon" aria-hidden="true">RC</div>
+    <div><span class="nl-welcome-kicker">{{ content.status.eyebrow }}</span><h2>{{ content.status.title }}</h2><p>{{ content.status.text }}</p></div>
+  </section>
+  {% if links %}
+    <section class="nl-welcome-explore">
+      <div class="nl-welcome-section-copy"><span class="nl-welcome-kicker">{{ content.explore.eyebrow }}</span><h2>{{ content.explore.title }}</h2><p>{{ content.explore.description }}</p></div>
+      <div class="nl-welcome-link-grid">{% for link in links %}<a href="{{ link.url }}"><span class="nl-welcome-link-number">0{{ loop.index }}</span><div><strong>{{ link.label }}</strong><small>{{ link.help }}</small></div><b aria-hidden="true">&rarr;</b></a>{% endfor %}</div>
+    </section>
+  {% endif %}
+  <footer class="nl-welcome-closing"><p>{{ content.closing.lead }}</p><h2>{{ content.closing.title }}</h2><span>{{ content.closing.welcome }}</span></footer>
+</section>
+{% endblock %}

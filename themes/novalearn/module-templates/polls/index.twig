@@ -1,0 +1,26 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('polls::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-polls-page module-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('polls::title')}]} only %}
+  <header class="nl-polls-hero">
+    <div><span class="nl-polls-kicker">{{ trans('polls::eyebrow') }}</span><h1>{{ trans('polls::title') }}</h1><p>{{ trans('polls::description') }}</p></div>
+    <div class="nl-polls-hero-mark" aria-hidden="true">?</div>
+  </header>
+  {% set status_labels = {'active': trans('polls::status.active'), 'closed': trans('polls::status.closed'), 'draft': trans('polls::status.draft')} %}
+  {% if polls %}
+    <div class="nl-poll-grid">
+      {% for poll in polls %}
+      <article class="nl-poll-card {{ poll.status == 'active' ? 'is-active' : '' }}">
+        <div class="nl-poll-card-top"><span class="nl-poll-status {{ poll.status == 'active' ? 'is-active' : '' }}">{{ status_labels[poll.status]|default(poll.status) }}</span><span class="nl-poll-votes">{{ trans('polls::votes', {count: poll.vote_count}) }}</span></div>
+        <h2><a href="/polls/{{ poll.id }}">{{ poll.question }}</a></h2>
+        {% if poll.ends_at %}<p class="nl-poll-date">{{ trans('polls::ends', {date: poll.ends_at}) }}</p>{% endif %}
+        <a class="nl-poll-open" href="/polls/{{ poll.id }}">{{ poll.status == 'active' ? trans('polls::vote_results') : trans('polls::view_results') }} <span aria-hidden="true">→</span></a>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% include 'components/empty-state.twig' with {title: trans('polls::empty'), message: trans('polls::empty_help')} only %}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('private-messages::sent.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="messages-page nl-comms-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('private-messages::title'), url: '/messages'}, {label: trans('private-messages::nav.sent')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('private-messages::account'), title: trans('private-messages::sent.title'), description: trans('private-messages::sent.description')} only %}
+    {% include "@private-messages/_nav.twig" %}
+    <div class="nl-message-app">
+        <aside class="nl-message-sidebar">
+            <a class="nl-compose-cta" href="/messages/compose">+ {{ trans('private-messages::nav.new') }}</a>
+            <nav class="nl-message-folders">
+                <a href="/messages"><span>✉</span>{{ trans('private-messages::nav.inbox') }}</a>
+                <a class="is-active" href="/messages/sent"><span>↗</span>{{ trans('private-messages::nav.sent') }}</a>
+                <a href="/messages/blocks"><span>⊘</span>{{ trans('private-messages::nav.blocked') }}</a>
+            </nav>
+        </aside>
+        <div class="nl-message-panel">
+            <div class="nl-message-panel-head"><div><span class="nl-kicker">{{ trans('private-messages::account') }}</span><h2>{{ trans('private-messages::nav.sent') }}</h2></div></div>
+            {% if messages %}
+            <div class="nl-conversation-list">
+                {% for item in messages %}
+                <a class="nl-conversation-row" href="/messages/{{ item.conversation_id }}">
+                    <span class="nl-person-avatar is-soft" aria-hidden="true">{{ item.recipient|slice(0,1)|upper }}</span>
+                    <span class="nl-conversation-main"><span class="nl-conversation-top"><strong>{{ item.recipient }}</strong><time>{{ item.created_at }}</time></span><span class="nl-conversation-subject">{{ item.subject }}</span></span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}{% include 'components/empty-state.twig' with {title: trans('private-messages::sent.empty'), message: trans('private-messages::sent.empty_help'), action_url: '/messages/compose', action_label: trans('private-messages::sent.write')} only %}{% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

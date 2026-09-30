@@ -1,0 +1,17 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.verification.resend_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.verification.eyebrow') }}</p>
+    <h1>{{ trans('auth.verification.resend_title') }}</h1>
+    <p>{{ trans('auth.verification.resend_help', {site_name: cms_name|default('NovaNuke')}) }}</p>
+    {% if sent %}<div class="alert alert-success">{{ trans('auth.verification.resend_sent') }}</div>{% endif %}
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/resend-verification">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('common.email') }}<input type="email" name="email" value="{{ email }}" maxlength="254" autocomplete="email" required></label>
+        <button type="submit">{{ trans('auth.verification.resend_submit') }}</button>
+    </form>
+    <p><a href="/login">{{ trans('common.sign_in') }}</a></p>
+</section>
+{% endblock %}

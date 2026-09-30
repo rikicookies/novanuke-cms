@@ -1,0 +1,18 @@
+{% if edit_url|default(null) or delete_url|default(null) %}
+<nav class="content-actions" aria-label="{{ trans('theme::content_management') }}">
+    {% if edit_url|default(null) %}
+    <a class="content-action" href="{{ edit_url }}">{{ trans('common.edit') }}</a>
+    {% endif %}
+    {% if delete_url|default(null) and csrf_token|default(null) %}
+    <details class="content-delete">
+        <summary>{{ trans('common.delete') }}</summary>
+        <form method="post" action="{{ delete_url }}">
+            <input type="hidden" name="_token" value="{{ csrf_token }}">
+            <input type="hidden" name="return_to" value="{{ return_to|default('') }}">
+            <label><input type="checkbox" name="confirm_delete" value="1" required> {{ trans('common.confirm_deletion') }}</label>
+            <button type="submit">{{ trans('common.delete_content') }}</button>
+        </form>
+    </details>
+    {% endif %}
+</nav>
+{% endif %}

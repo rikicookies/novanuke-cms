@@ -1,0 +1,11 @@
+{% set heading_actions = actions|default([]) %}
+<div class="d-lg-flex align-items-lg-start mb-3 mb-lg-4">
+    <div class="flex-1">
+        {% if eyebrow|default('') %}<div class="text-uppercase text-muted fs-sm fw-semibold mb-1">{{ eyebrow }}</div>{% endif %}
+        <h1 class="mb-1 fs-3 fw-semibold">{{ title }}</h1>
+        {% if description|default('') %}<p class="text-muted mb-0 mw-75">{{ description }}</p>{% endif %}
+    </div>
+    {% if heading_actions %}<div class="d-flex flex-wrap gap-2 mt-3 mt-lg-0 ms-lg-3">
+        {% for action in heading_actions %}{% set action_variant = action.variant|default(loop.first ? 'primary' : 'light') %}<a href="{{ action.url }}" class="btn {{ action_variant == 'primary' ? 'btn-primary text-white' : 'btn-light' }}"><i class="{{ action.icon|default(action_variant == 'primary' ? 'ph-plus' : 'ph-arrow-square-out') }} me-2"></i>{{ action.label }}</a>{% endfor %}
+    </div>{% endif %}
+</div>

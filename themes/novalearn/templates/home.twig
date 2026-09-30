@@ -1,0 +1,29 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-core-home">
+  <header class="nl-core-home-hero">
+    <div class="nl-core-home-copy">
+      <span class="nl-core-home-kicker">{{ trans('theme::home_kicker') }}</span>
+      <h1>{{ home_content.headline }}</h1>
+      <p>{% if home_content.description_custom %}{{ home_content.description }}{% else %}{{ theme.settings.site_tagline|default(trans('home.description')) }}{% endif %}</p>
+      <div class="nl-core-home-actions">
+        {% if user %}
+          <a class="nl-core-home-primary" href="/account/profile">{{ trans('theme::home_member_title') }}</a>
+          <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="nl-core-home-secondary" type="submit">{{ trans('common.sign_out') }}</button></form>
+        {% else %}
+          <a class="nl-core-home-primary" href="/login">{{ trans('common.sign_in') }}</a>
+          <a class="nl-core-home-secondary" href="/register">{{ trans('common.create_account') }}</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="nl-core-home-mark" aria-hidden="true"><span>N</span><i></i><b></b></div>
+  </header>
+
+  <section class="nl-core-home-strip">
+    <div><span>01</span><strong>{{ home_content.cards.explore.title }}</strong><p>{{ home_content.cards.explore.description }}</p></div>
+    <div><span>02</span><strong>{% if user %}{{ home_content.cards.account.title }}{% else %}{{ home_content.cards.guest.title }}{% endif %}</strong><p>{% if user %}{{ home_content.cards.account.description }}{% else %}{{ home_content.cards.guest.description }}{% endif %}</p></div>
+    {% if theme.settings.show_version %}<div><span>03</span><strong>{{ trans('theme::home_version_label', {version: version}) }}</strong><p>{% if home_content.description_custom %}{{ home_content.description }}{% else %}{{ trans('home.description') }}{% endif %}</p></div>{% endif %}
+  </section>
+</section>
+{% endblock %}

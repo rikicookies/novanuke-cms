@@ -1,0 +1,39 @@
+{
+  "name": "NovaLearn",
+  "slug": "novalearn",
+  "version": "1.0.0",
+  "description": "NovaNuke editorial learning theme with public module overrides, account flows and a core home fallback.",
+  "author": "NovaNuke Project",
+  "cms_min_version": "0.4.0-beta.1",
+  "screenshot": "screenshot.svg",
+  "layouts": [
+    "default",
+    "full-width",
+    "two-sidebars"
+  ],
+  "positions": [
+    "header",
+    "left-sidebar",
+    "right-sidebar",
+    "before-content",
+    "after-content",
+    "footer"
+  ],
+  "settings": {
+    "accent_color": {
+      "type": "color",
+      "label": "Accent color",
+      "default": "#2563eb"
+    },
+    "site_tagline": {
+      "type": "text",
+      "label": "Site tagline",
+      "default": "Aprende construyendo."
+    },
+    "show_version": {
+      "type": "boolean",
+      "label": "Show development version",
+      "default": false
+    }
+  }
+}

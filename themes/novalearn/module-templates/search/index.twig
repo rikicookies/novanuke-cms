@@ -1,0 +1,79 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('search::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+{% set type_labels = {'news': trans('search::type.news'), 'pages': trans('search::type.pages'), 'downloads': trans('search::type.downloads'), 'wiki': trans('search::type.wiki')} %}
+{% set type_marks = {'news': 'N', 'pages': 'P', 'downloads': 'D', 'wiki': 'W'} %}
+<section class="nl-search-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('search::title')}]} only %}
+
+  <header class="nl-search-hero">
+    <div class="nl-search-hero-copy">
+      <span class="nl-search-kicker">{{ trans('search::eyebrow') }}</span>
+      <h1>{{ trans('search::title') }}</h1>
+      <p>{{ trans('search::description') }}</p>
+    </div>
+    <form class="nl-search-box" method="get" action="/search">
+      <div class="nl-search-input-wrap">
+        <span class="nl-search-glass" aria-hidden="true"></span>
+        <input type="search" name="q" minlength="2" maxlength="100" required value="{{ term }}" placeholder="{{ trans('search::keywords') }}" aria-label="{{ trans('search::keywords') }}">
+      </div>
+      <select name="type" aria-label="{{ trans('search::content_type') }}">
+        <option value="">{{ trans('search::all_content') }}</option>
+        {% for type in types %}<option value="{{ type.value }}" {{ selected_type == type.value ? 'selected' : '' }}>{{ type_labels[type.value]|default(type.label) }}</option>{% endfor %}
+      </select>
+      <button type="submit">{{ trans('search::submit') }}</button>
+    </form>
+  </header>
+
+  {% if error %}<div class="nl-search-alert">{{ error }}</div>{% endif %}
+
+  {% if result %}
+    <div class="nl-search-results-head">
+      <div>
+        <span class="nl-search-kicker">{{ trans('search::results') }}</span>
+        <h2>{{ result.total == 1 ? trans('search::result_count_one', {term: term}) : trans('search::result_count', {count: result.total, term: term}) }}</h2>
+      </div>
+      <div class="nl-search-filter-note">{{ selected_type ? type_labels[selected_type]|default(selected_type|title) : trans('search::all_content') }}</div>
+    </div>
+
+    {% if result.items %}
+      <div class="nl-search-results">
+        {% for item in result.items %}
+          <article class="nl-search-result">
+            <div class="nl-search-result-mark is-{{ item.type }}" aria-hidden="true">{{ type_marks[item.type]|default('•') }}</div>
+            <div class="nl-search-result-main">
+              <div class="nl-search-result-meta">
+                <span class="nl-search-type">{{ type_labels[item.type]|default(item.type|title) }}</span>
+                <span>{{ item.published_at|date(cms_date_format, cms_timezone) }}</span>
+              </div>
+              <h3><a href="{{ item.url }}">{{ item.title_html }}</a></h3>
+              <p>{{ item.excerpt_html }}</p>
+              <a class="nl-search-open" href="{{ item.url }}">{{ trans('theme::search_open_result') }} <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="nl-search-empty">
+        <div class="nl-search-empty-icon" aria-hidden="true">?</div>
+        <h2>{{ trans('search::empty') }}</h2>
+        <p>{{ trans('search::empty_help') }}</p>
+      </div>
+    {% endif %}
+
+    {% if result.pages > 1 %}
+      <nav class="nl-search-pagination" aria-label="{{ trans('search::pagination') }}">
+        {% for page in 1..result.pages %}<a class="{{ page == result.page ? 'current' : '' }}" href="/search?q={{ term|url_encode }}&type={{ selected_type|url_encode }}&page={{ page }}">{{ page }}</a>{% endfor %}
+      </nav>
+    {% endif %}
+  {% elseif not error %}
+    <div class="nl-search-start">
+      <div class="nl-search-start-icon" aria-hidden="true"><span class="nl-search-glass"></span></div>
+      <div><h2>{{ trans('search::start') }}</h2><p>{{ trans('search::start_help') }}</p></div>
+      <div class="nl-search-sources">
+        {% for type in types %}<span><b>{{ type_marks[type.value]|default('•') }}</b>{{ type_labels[type.value]|default(type.label) }}</span>{% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

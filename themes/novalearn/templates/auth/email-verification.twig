@@ -1,0 +1,5 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans(verified ? 'auth.verification.success_title' : 'auth.verification.invalid_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-auth-status-page"><div class="nl-auth-status-card {{ verified ? 'nl-auth-status-card-success' : 'nl-auth-status-card-warning' }}"><span class="nl-auth-status-symbol">{{ verified ? '✓' : '!' }}</span><span class="nl-login-kicker">{{ trans('auth.verification.eyebrow') }}</span><h1>{{ trans(verified ? 'auth.verification.success_title' : 'auth.verification.invalid_title') }}</h1><p>{{ trans(verified ? 'auth.verification.success_message' : 'auth.verification.invalid_message') }}</p>{% if verified %}<a class="nl-auth-primary nl-auth-primary-link" href="/login">{{ trans('common.sign_in') }}</a>{% else %}<a class="nl-auth-primary nl-auth-primary-link" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>{% endif %}</div></section>
+{% endblock %}

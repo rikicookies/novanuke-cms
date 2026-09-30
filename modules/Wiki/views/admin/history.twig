@@ -1,0 +1,16 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('wiki::admin.history.title') }} — {{ page.title }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-wiki-admin">
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('wiki::index.title'), url: '/admin/wiki'}, {label: page.title, url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: trans('wiki::admin.history.title')}]} only %}
+    {% include 'components/admin-page-heading.twig' with {eyebrow: trans('wiki::admin.history.eyebrow'), title: page.title, description: trans('wiki::admin.history.description', {path: page.path}), actions: [{label: trans('wiki::admin.history.edit_current'), url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: trans('wiki::admin.history.view_current'), url: '/wiki/' ~ page.path}]} only %}
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    <form method="get" action="/admin/wiki/{{ page.id }}/compare">
+        {% set status_labels = {'draft':trans('wiki::admin.status.draft'),'published':trans('wiki::admin.status.published')} %}{% set audience_labels = {'public':trans('wiki::admin.audience.public'),'member':trans('wiki::admin.audience.member'),'vip':trans('wiki::admin.audience.vip')} %}
+        <div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('wiki::admin.history.from') }}</th><th>{{ trans('wiki::admin.history.to') }}</th><th>{{ trans('wiki::admin.history.revision') }}</th><th>{{ trans('wiki::admin.history.author') }}</th><th>{{ trans('wiki::admin.status') }}</th><th>{{ trans('wiki::admin.audience') }}</th><th>{{ trans('wiki::admin.history.saved') }}</th><th></th></tr></thead><tbody>
+            {% for revision in revisions %}<tr><td><input type="radio" name="from" value="{{ revision.id }}" required {{ loop.index == 2 ? 'checked' : '' }} aria-label="{{ trans('wiki::admin.history.compare_from', {revision: revision.revision_number}) }}"></td><td><input type="radio" name="to" value="{{ revision.id }}" required {{ loop.first ? 'checked' : '' }} aria-label="{{ trans('wiki::admin.history.compare_to', {revision: revision.revision_number}) }}"></td><td><strong>#{{ revision.revision_number }}</strong><small>{{ revision.title }}</small></td><td>{{ revision.actor }}</td><td>{{ status_labels[revision.status]|default(revision.status) }}</td><td>{{ audience_labels[revision.audience]|default(revision.audience) }}</td><td>{{ revision.created_at }}</td><td><a href="/admin/wiki/{{ page.id }}/revisions/{{ revision.id }}">{{ trans('wiki::admin.history.inspect') }}</a></td></tr>{% else %}<tr><td colspan="8">{{ trans('wiki::admin.history.empty') }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        {% if revisions|length > 1 %}<p><button type="submit">{{ trans('wiki::admin.history.compare_selected') }}</button></p>{% endif %}
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ poll.question }} — {{ trans('polls::title') }}{% endblock %}
+{% block content %}
+<section class="nl-polls-page nl-poll-detail module-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('polls::title'), url: '/polls'}, {label: trans('polls::poll')}]} only %}
+  <header class="nl-poll-question-hero"><span class="nl-polls-kicker">{{ trans('polls::poll') }}</span><h1>{{ poll.question }}</h1><div class="nl-poll-question-meta"><span class="nl-poll-status {{ poll.accepting ? 'is-active' : '' }}">{{ poll.accepting ? trans('polls::voting_open') : trans('polls::voting_closed') }}</span><span>{{ poll.total_votes == 1 ? trans('polls::total_voter') : trans('polls::total_voters', {count: poll.total_votes}) }}</span></div></header>
+  {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+  <div class="nl-poll-detail-grid">
+    <section class="nl-poll-panel">
+      <div class="nl-poll-panel-head"><span class="nl-poll-step">1</span><div><h2>{{ trans('polls::your_vote') }}</h2><p>{{ poll.allow_multiple ? trans('polls::choose_multiple', {count: poll.max_selections}) : trans('polls::choose_one') }}</p></div></div>
+      {% if poll.accepting and not has_voted %}
+      <form class="nl-poll-form" method="post" action="/polls/{{ poll.id }}/vote"><input type="hidden" name="_token" value="{{ csrf_token }}">
+        {% for option in poll.options %}<label class="nl-poll-choice"><input type="{{ poll.allow_multiple ? 'checkbox' : 'radio' }}" name="options[]" value="{{ option.id }}"><span>{{ option.label }}</span></label>{% endfor %}
+        <button class="nl-poll-submit" type="submit">{{ trans('polls::submit_vote') }}</button>
+      </form>
+      {% else %}<div class="nl-poll-thanks"><span aria-hidden="true">✓</span><div><strong>{{ has_voted ? trans('polls::vote_recorded') : trans('polls::closed') }}</strong><p>{{ has_voted ? trans('polls::thanks') : trans('polls::closed_help') }}</p></div></div>{% endif %}
+    </section>
+    <section class="nl-poll-panel">
+      <div class="nl-poll-panel-head"><span class="nl-poll-step is-results">%</span><div><h2>{{ trans('polls::results') }}</h2><p>{{ poll.total_votes == 1 ? trans('polls::total_voter') : trans('polls::total_voters', {count: poll.total_votes}) }}</p></div></div>
+      <div class="nl-poll-results">{% for option in poll.options %}{% set percent = poll.total_votes > 0 ? (option.votes / poll.total_votes * 100) : 0 %}<div class="nl-poll-result"><div><strong>{{ option.label }}</strong><span>{{ option.votes }} · {{ percent|round }}%</span></div><div class="nl-poll-bar"><span style="width:{{ percent > 100 ? 100 : percent }}%"></span></div></div>{% endfor %}</div>
+    </section>
+  </div>
+  <a class="nl-poll-back" href="/polls">← {{ trans('polls::back') }}</a>
+</section>
+{% endblock %}

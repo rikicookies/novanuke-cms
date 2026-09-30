@@ -1,0 +1,15 @@
+{
+    "name": "Notifications",
+    "slug": "notifications",
+    "version": "1.2.0",
+    "api_version": "1.0",
+    "description": "In-site notifications with unread counts, safe links and event integrations.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Notifications\\src\\NotificationsModule",
+    "cms_min_version": "0.2.0-alpha.17",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [],
+    "events": ["private-message.sent", "comment.created", "friend.requested", "friend.accepted", "maintenance.pruning"],
+    "navigation": {"label": "modules.navigation.notifications", "url": "/notifications", "icon": "bell", "order": 100, "audience": "member", "public_landing": true}
+}

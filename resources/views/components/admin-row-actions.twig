@@ -1,0 +1,4 @@
+{% set row_actions = actions|default([]) %}
+{% if row_actions %}<div class="d-inline-flex align-items-center gap-1" aria-label="{{ label|default(trans('admin.row_actions')) }}">
+{% for action in row_actions %}<a class="btn btn-light btn-icon btn-sm" href="{{ action.url }}" title="{{ action.label }}" aria-label="{{ action.label }}"><i class="{{ action.icon|default(loop.first ? 'ph-pencil-simple' : 'ph-arrow-square-out') }}"></i></a>{% endfor %}
+</div>{% endif %}

@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ profile.display_name }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<article class="public-profile profile-portal">
+    <header class="profile-hero">
+        <div class="profile-identity">
+            {% if profile.avatar_path %}<img class="profile-avatar" src="{{ profile.avatar_path }}" alt="">{% else %}<div class="profile-avatar profile-avatar-placeholder" aria-hidden="true">{{ profile.display_name|slice(0,1)|upper }}</div>{% endif %}
+            <div><p class="eyebrow">@{{ profile.username }}</p><h1>{{ profile.display_name }}</h1><p class="profile-member-since">{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</p></div>
+        </div>
+        <div class="profile-status">{% if membership.vip|default(false) %}<span class="badge badge-active">{{ membership.name|default(trans('profile.vip')) }}</span>{% if membership.lifetime|default(false) %}<small>{{ trans('profile.lifetime') }}</small>{% endif %}{% else %}<span class="badge">{{ trans('profile.member') }}</span>{% endif %}</div>
+    </header>
+    <div class="profile-nav-wrap">{% include "auth/_social-nav.twig" %}</div>
+    {% if profile_actions|default([]) %}<div class="profile-actions">{% for action in profile_actions %}{% if action.method == 'post' %}<form method="post" action="{{ action.url }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="module-button" type="submit">{{ action.label }}</button></form>{% else %}<a class="module-link-button" href="{{ action.url }}">{{ action.label }}</a>{% endif %}{% endfor %}</div>{% endif %}
+    {% if profile_statistics|default([]) %}<section class="profile-statistics" aria-label="{{ trans('profile.statistics') }}">{% for statistic in profile_statistics %}<div class="profile-stat-card">{% if statistic.url %}<a href="{{ statistic.url }}"><strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span></a>{% else %}<strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span>{% endif %}</div>{% endfor %}</section>{% endif %}
+    <div class="profile-details-grid">
+        <section class="profile-about"><p class="eyebrow">{{ trans('profile.about') }}</p><h2>{{ profile.display_name }}</h2>{% if profile.bio %}<div class="profile-bio">{{ profile.bio_html }}</div>{% else %}<p class="profile-empty-copy">{{ trans('profile.bio_empty') }}</p>{% endif %}</section>
+        <aside class="profile-details"><p class="eyebrow">{{ trans('profile.details') }}</p>{% if profile.location %}<div><strong>{{ trans('profile.location_label') }}</strong><span>{{ profile.location }}</span></div>{% endif %}{% if profile.website %}<div><strong>{{ trans('profile.website_label') }}</strong><a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">{{ trans('profile.website') }} ↗</a></div>{% endif %}{% if not profile.location and not profile.website %}<p class="profile-empty-copy">{{ trans('profile.details_empty') }}</p>{% endif %}</aside>
+    </div>
+</article>
+{% endblock %}

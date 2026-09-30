@@ -1,0 +1,65 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.users.manage_user', {name: edited_user.username}) }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-user-edit-page">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.users.title'), url: '/admin/users'}, {label: edited_user.username}]} only %}
+
+  <div class="nn-page-heading">
+    <div class="nn-edit-user-heading">
+      <span class="nn-user-avatar nn-user-avatar-lg">{{ edited_user.username|slice(0,1)|upper }}</span>
+      <div><span class="nn-eyebrow">{{ trans('admin.users.account') }}</span><h1>{{ edited_user.username }}</h1><p>{{ edited_user.email }}</p></div>
+    </div>
+    <a class="nn-button nn-button-secondary" href="/admin/users"><i class="ph-arrow-left"></i>{{ trans('admin.users.back_to_users') }}</a>
+  </div>
+
+  {% if saved %}<div class="nn-inline-alert is-success"><i class="ph-check-circle"></i><span>{{ trans('admin.users.saved') }}</span></div>{% endif %}
+  {% if password_reset %}<div class="nn-inline-alert is-success"><i class="ph-check-circle"></i><span>{{ trans('admin.users.password_reset_saved') }}</span></div>{% endif %}
+  {% if vip_updated %}<div class="nn-inline-alert is-success"><i class="ph-check-circle"></i><span>{{ trans('admin.users.vip_updated') }}</span></div>{% endif %}
+  {% if edited_user.id == current_user_id %}<div class="nn-inline-alert is-info"><i class="ph-info"></i><span>{{ trans('admin.users.own_account_help') }}</span></div>{% endif %}
+
+  <div class="nn-edit-user-grid">
+    <div class="nn-edit-user-main">
+      <form method="post" action="/admin/users/{{ edited_user.id }}">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <section class="nn-card nn-form-section">
+          <header class="nn-card-header"><span class="nn-section-icon is-blue"><i class="ph-identification-card"></i></span><div><h2>{{ trans('admin.users.account_status') }}</h2><p>{{ edited_user.username }} · {{ edited_user.email }}</p></div></header>
+          <div class="nn-form-body">
+            <label class="nn-field"><span>{{ trans('admin.users.account_status') }}</span><select name="status" {% if edited_user.id == current_user_id %}disabled{% endif %}><option value="active" {% if edited_user.status == 'active' %}selected{% endif %}>{{ trans('admin.users.status.active') }}</option><option value="suspended" {% if edited_user.status == 'suspended' %}selected{% endif %}>{{ trans('admin.users.status.suspended') }}</option></select></label>
+          </div>
+        </section>
+
+        <section class="nn-card nn-form-section">
+          <header class="nn-card-header"><span class="nn-section-icon is-purple"><i class="ph-shield-check"></i></span><div><h2>{{ trans('admin.users.roles') }}</h2></div></header>
+          <div class="nn-form-body"><div class="nn-role-grid">{% for role in roles %}<label class="nn-role-card"><input type="checkbox" name="roles[]" value="{{ role.id }}" {% if role.id in assigned_roles %}checked{% endif %} {% if edited_user.id == current_user_id %}disabled{% endif %}><span class="nn-role-check"><i class="ph-check"></i></span><span><strong>{{ role.name }}</strong><code>{{ role.slug }}</code>{% if role.description %}<small>{{ role.description }}</small>{% endif %}</span></label>{% endfor %}</div></div>
+          {% if edited_user.id != current_user_id %}<footer class="nn-card-actions"><button class="nn-button nn-button-primary" type="submit"><i class="ph-floppy-disk"></i>{{ trans('admin.users.save') }}</button></footer>{% endif %}
+        </section>
+      </form>
+
+      {% if edited_user.id != current_user_id %}
+      <section class="nn-card nn-form-section">
+        <header class="nn-card-header"><span class="nn-section-icon is-orange"><i class="ph-key"></i></span><div><h2>{{ trans('admin.users.temporary_password') }}</h2></div></header>
+        <div class="nn-form-body">
+          {% if password_error %}<div class="nn-inline-alert is-danger"><i class="ph-warning-circle"></i><span>{{ password_error }}</span></div>{% endif %}
+          <form class="nn-form-grid" method="post" action="/admin/users/{{ edited_user.id }}/password"><input type="hidden" name="_token" value="{{ csrf_token }}"><label class="nn-field"><span>{{ trans('admin.users.new_temporary_password') }}</span><div class="nn-input-icon"><i class="ph-lock-key"></i><input type="password" name="password" minlength="12" maxlength="255" required autocomplete="new-password"></div></label><label class="nn-field"><span>{{ trans('admin.users.confirm_temporary_password') }}</span><div class="nn-input-icon"><i class="ph-lock-key-open"></i><input type="password" name="password_confirmation" minlength="12" maxlength="255" required autocomplete="new-password"></div></label><div class="nn-form-span-2 nn-inline-form-action"><button class="nn-button nn-button-secondary" type="submit"><i class="ph-key"></i>{{ trans('admin.users.reset_password') }}</button></div></form>
+        </div>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="nn-edit-user-side">
+      <section class="nn-card nn-membership-card">
+        <header class="nn-card-header"><span class="nn-section-icon is-green"><i class="ph-crown"></i></span><div><h2>{{ trans('admin.users.membership') }}</h2></div></header>
+        <div class="nn-form-body">
+          <div class="nn-membership-current">
+          {% if membership and membership.vip %}<span class="nn-status is-ok">{{ trans('admin.memberships.plan.' ~ membership.plan_key|default('vip-custom')) }}</span><p>{% if membership.lifetime %}{{ trans('admin.memberships.lifetime_access') }}{% else %}{{ trans('admin.users.expires', {date: membership.expires_at}) }}{% endif %}</p>
+          {% elseif membership %}<span class="nn-status is-neutral">{{ trans('admin.memberships.inactive') }}</span><p>{{ trans('admin.users.previous_plan') }}: {{ trans('admin.memberships.plan.' ~ membership.plan_key|default('vip-custom')) }}{% if membership.expires_at %}<br>{{ trans('admin.users.latest_expiration', {date: membership.expires_at}) }}{% endif %}</p>
+          {% else %}<span class="nn-status is-neutral">{{ trans('admin.memberships.free') }}</span><p>{{ trans('admin.memberships.standard_access') }}</p>{% endif %}
+          </div>
+          <form class="nn-membership-form" method="post" action="/admin/users/{{ edited_user.id }}/membership"><input type="hidden" name="_token" value="{{ csrf_token }}"><label class="nn-field"><span>{{ trans('admin.memberships.plan') }}</span><select name="plan" required>{% for key, plan in membership_plans %}<option value="{{ key }}">{{ trans('admin.memberships.plan.' ~ key) }}</option>{% endfor %}</select></label><label class="nn-field"><span>{{ trans('admin.memberships.admin_note') }}</span><input type="text" name="note" maxlength="255" placeholder="{{ trans('admin.memberships.note_optional') }}"></label><button class="nn-button nn-button-primary nn-button-block" type="submit"><i class="ph-crown"></i>{{ trans('admin.memberships.assign') }}</button></form>
+          {% if membership and membership.vip %}<form class="nn-revoke-form" method="post" action="/admin/users/{{ edited_user.id }}/vip/revoke" onsubmit="return confirm('{{ trans('admin.memberships.confirm_revoke') }}')"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="nn-button nn-button-danger-soft nn-button-block"><i class="ph-x-circle"></i>{{ trans('admin.memberships.revoke') }}</button></form>{% endif %}
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans(verified ? 'account.email.changed_title' : 'account.email.invalid_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">{{ trans('account.settings') }}</p>
+    <h1>{{ trans(verified ? 'account.email.changed_title' : 'account.email.invalid_title') }}</h1>
+    <p>{{ trans(verified ? 'account.email.changed' : 'account.email.invalid') }}</p>
+    <p><a href="/login">{{ trans('auth.login.heading') }}</a></p>
+</section>
+{% endblock %}

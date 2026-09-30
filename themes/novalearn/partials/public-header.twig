@@ -1,0 +1,25 @@
+{% import 'partials/icon.twig' as icons %}
+<header class="nl-topbar">
+    <div class="nl-topbar-left">
+        <button class="nova-nav-toggle nl-menu-toggle" type="button" data-nav-toggle aria-expanded="true" aria-controls="nova-primary-sidebar">
+            {{ icons.render('menu', theme.asset_base) }}<span class="visually-hidden">{{ trans('common.toggle_navigation') }}</span>
+        </button>
+        <a class="nl-brand" href="/" aria-label="{{ cms_name|default('NovaNuke') }}">
+            <span class="nl-brand-mark">N</span><span>{{ cms_name|default('NovaNuke') }}</span>
+        </a>
+    </div>
+    <form class="nl-global-search" method="get" action="/search" role="search">
+        <span class="nl-search-icon">⌕</span>
+        <input type="search" name="q" placeholder="{{ trans('theme::search_placeholder') }}" aria-label="{{ trans('theme::search_label') }}">
+    </form>
+    <nav class="nl-account" aria-label="{{ trans('theme::account') }}">
+        {% if notification_unread_count is defined %}<a class="nl-icon-link" href="/notifications" aria-label="{{ trans('theme::notifications') }}">{{ icons.render('bell', theme.asset_base) }}{% if notification_unread_count > 0 %}<span class="nl-notification-dot">{{ notification_unread_count }}</span>{% endif %}</a>{% endif %}
+        {% if current_user %}
+            <a class="nl-user-link" href="/account/profile">{{ icons.render('user', theme.asset_base) }}<span>{{ current_user.username }}</span></a>
+            <form class="nova-logout-form" method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="nl-quiet-button" type="submit">{{ trans('common.sign_out') }}</button></form>
+        {% else %}
+            <a class="nl-login" href="/login">{{ trans('common.sign_in') }}</a>
+            <a class="nl-register" href="/register">{{ trans('theme::register') }}</a>
+        {% endif %}
+    </nav>
+</header>

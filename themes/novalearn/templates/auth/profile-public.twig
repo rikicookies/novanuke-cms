@@ -1,0 +1,22 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ profile.display_name }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-account-page nl-public-profile">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('social.members'), url: '/users'}, {label: profile.display_name}]} only %}
+    <article class="nl-profile-hero">
+        <div class="nl-profile-cover" aria-hidden="true"></div>
+        <div class="nl-profile-hero-body">
+            <div class="nl-profile-avatar-wrap">{% if profile.avatar_path %}<img class="nl-profile-avatar" src="{{ profile.avatar_path }}" alt="">{% else %}<div class="nl-profile-avatar nl-profile-avatar-placeholder" aria-hidden="true">{{ profile.display_name|slice(0,1)|upper }}</div>{% endif %}</div>
+            <div class="nl-profile-identity"><span class="nl-kicker">{{ trans('theme::profile_member') }}</span><h1>{{ profile.display_name }}</h1><p>@{{ profile.username }} · {{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</p></div>
+            <div class="nl-profile-status">{% if membership.vip|default(false) %}<span class="nl-profile-badge nl-profile-badge-vip">{{ membership.name|default(trans('profile.vip')) }}</span>{% if membership.lifetime|default(false) %}<small>{{ trans('profile.lifetime') }}</small>{% endif %}{% else %}<span class="nl-profile-badge">{{ trans('profile.member') }}</span>{% endif %}</div>
+        </div>
+        <div class="nl-profile-nav">{% include "auth/_social-nav.twig" %}</div>
+    </article>
+    {% if profile_actions|default([]) %}<div class="nl-profile-actions">{% for action in profile_actions %}{% if action.method == 'post' %}<form method="post" action="{{ action.url }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="nl-btn nl-btn-primary" type="submit">{{ action.label }}</button></form>{% else %}<a class="nl-btn nl-btn-primary" href="{{ action.url }}">{{ action.label }}</a>{% endif %}{% endfor %}</div>{% endif %}
+    {% if profile_statistics|default([]) %}<section class="nl-profile-stats" aria-label="{{ trans('profile.statistics') }}">{% for statistic in profile_statistics %}<article>{% if statistic.url %}<a href="{{ statistic.url }}"><strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span></a>{% else %}<strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span>{% endif %}</article>{% endfor %}</section>{% endif %}
+    <div class="nl-profile-grid">
+        <section class="nl-surface nl-profile-about"><span class="nl-kicker">{{ trans('profile.about') }}</span><h2>{{ trans('theme::profile_about_title', {name: profile.display_name}) }}</h2>{% if profile.bio %}<div class="nl-profile-bio">{{ profile.bio_html }}</div>{% else %}<div class="nl-empty-inline"><strong>{{ trans('theme::profile_no_bio_title') }}</strong><p>{{ trans('profile.bio_empty') }}</p></div>{% endif %}</section>
+        <aside class="nl-surface nl-profile-details"><span class="nl-kicker">{{ trans('profile.details') }}</span><h2>{{ trans('theme::profile_details_title') }}</h2>{% if profile.location %}<div class="nl-detail-row"><span>{{ trans('profile.location_label') }}</span><strong>{{ profile.location }}</strong></div>{% endif %}{% if profile.website %}<div class="nl-detail-row"><span>{{ trans('profile.website_label') }}</span><a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">{{ trans('profile.website') }} ↗</a></div>{% endif %}{% if not profile.location and not profile.website %}<p class="nl-muted">{{ trans('profile.details_empty') }}</p>{% endif %}</aside>
+    </div>
+</section>
+{% endblock %}

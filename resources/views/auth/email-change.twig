@@ -1,0 +1,24 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.email.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="dashboard-card account-email">
+    <p class="eyebrow">{{ trans('account.settings') }}</p>
+    <h1>{{ trans('account.email.title') }}</h1>
+    <p>{{ trans('account.email.current', {email: current_email}) }}</p>
+    <p>{{ trans('account.email.help') }}</p>
+    {% if sent %}<div class="alert alert-success">{{ trans('account.email.sent') }}</div>{% endif %}
+    <form method="post" action="/account/email" class="settings-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('account.email.new') }}
+            <input type="email" name="email" value="{{ email }}" maxlength="254" autocomplete="email" required>
+            {% if errors.email|default(null) %}<small class="field-error">{{ errors.email }}</small>{% endif %}
+        </label>
+        <label>{{ trans('account.password.current') }}
+            <input type="password" name="password" maxlength="255" autocomplete="current-password" required>
+            {% if errors.password|default(null) %}<small class="field-error">{{ errors.password }}</small>{% endif %}
+        </label>
+        <button type="submit">{{ trans('account.email.submit') }}</button>
+    </form>
+    <p><a href="/account/security">{{ trans('account.email.back') }}</a></p>
+</section>
+{% endblock %}

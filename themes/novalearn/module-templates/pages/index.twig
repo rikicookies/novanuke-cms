@@ -1,0 +1,35 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('pages::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-pages-directory">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('pages::title')}]} only %}
+    <header class="nl-pages-hero">
+        <div>
+            <span class="nl-pages-kicker">{{ trans('pages::eyebrow') }}</span>
+            <h1>{{ trans('pages::title') }}</h1>
+            <p>{{ trans('pages::empty_help') }}</p>
+        </div>
+        <div class="nl-pages-hero-mark" aria-hidden="true">▤</div>
+    </header>
+    {% if manage_url %}<div class="nl-pages-toolbar"><a class="nl-pages-manage" href="{{ manage_url }}">{{ trans('pages::manage') }}</a></div>{% endif %}
+    {% if pages %}
+        <div class="nl-pages-grid">
+            {% for page in pages %}
+                <article class="nl-page-card">
+                    <div class="nl-page-card-icon" aria-hidden="true">{{ loop.index < 10 ? '0' ~ loop.index : loop.index }}</div>
+                    <div class="nl-page-card-copy">
+                        <div class="nl-page-card-meta">
+                            <span>{{ trans('pages::title') }}</span>
+                            {% if page.access_type != 'public' %}<span class="nl-page-access">{{ trans('pages::access.' ~ page.access_type) }}</span>{% endif %}
+                        </div>
+                        <h2><a href="/pages/{{ page.slug }}">{{ page.menu_title|default(page.title, true) }}</a></h2>
+                    </div>
+                    <a class="nl-page-card-arrow" href="/pages/{{ page.slug }}" aria-label="{{ page.menu_title|default(page.title, true) }}">→</a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="nl-pages-empty">{% include 'components/empty-state.twig' with {title: trans('pages::empty'), message: trans('pages::empty_help')} only %}</div>
+    {% endif %}
+</section>
+{% endblock %}

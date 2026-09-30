@@ -1,0 +1,90 @@
+name: NovaNuke CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: PHP 8.3 quality gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, fileinfo, mbstring, openssl, pdo, pdo_mysql
+          tools: composer:v2
+          coverage: none
+
+      - name: Install locked Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Check PHP syntax
+        shell: bash
+        run: find app bootstrap config routes modules themes tests bin public -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run unit tests
+        run: composer test
+
+      - name: Check translations
+        run: php bin/cms i18n:check
+
+      - name: Check release safety
+        run: php bin/cms release:check
+
+      - name: Check release smoke contracts
+        run: php bin/cms release:smoke
+
+      - name: Check bundled themes
+        run: php bin/cms theme:check
+
+  integration:
+    name: PHP 8.3 MySQL integration
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: novanuke_ci
+          MYSQL_ROOT_PASSWORD: novanuke_ci_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pnovanuke_ci_root_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      NOVANUKE_TEST_DB_HOST: 127.0.0.1
+      NOVANUKE_TEST_DB_PORT: '3306'
+      NOVANUKE_TEST_DB_USERNAME: root
+      NOVANUKE_TEST_DB_PASSWORD: novanuke_ci_root_password
+      DB_DATABASE: novanuke_ci
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, fileinfo, mbstring, openssl, pdo, pdo_mysql
+          tools: composer:v2
+          coverage: none
+
+      - name: Install locked Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run isolated MySQL integration tests
+        run: composer test:integration

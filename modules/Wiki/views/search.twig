@@ -1,0 +1,15 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('wiki::search.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+{% block content %}
+<section class="wiki-directory wiki-search">
+    <nav class="content-breadcrumbs" aria-label="{{ trans('wiki::breadcrumb') }}"><ol><li><a href="/wiki">{{ trans('wiki::index.title') }}</a></li><li><span aria-current="page">{{ trans('wiki::search.title') }}</span></li></ol></nav>
+    <header><p class="eyebrow">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ trans('wiki::search.title') }}</h1><p>{{ trans('wiki::search.description') }}</p></header>
+    <form class="search-form" method="get" action="/wiki/search">
+        <label>{{ trans('wiki::search.label') }}<input type="search" name="q" value="{{ term }}" minlength="2" maxlength="100" required></label>
+        <button type="submit">{{ trans('wiki::action.search') }}</button>
+    </form>
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    {% if searched %}<div class="page-directory-grid">{% for page in results %}<article><h2><a href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}">{{ page.title }}</a></h2><small>{{ page.updated_at|date(cms_date_format, cms_timezone) }}{% if page.audience != 'public' %} · {{ page.audience == 'vip' ? trans('wiki::audience.vip') : trans('wiki::audience.members') }}{% endif %}</small></article>{% else %}{% include 'components/empty-state.twig' with {title: trans('wiki::search.empty'), message: trans('wiki::search.empty_help')} only %}{% endfor %}</div>{% endif %}
+</section>
+{% endblock %}

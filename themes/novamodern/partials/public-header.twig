@@ -1,0 +1,11 @@
+{% import 'partials/icon.twig' as icons %}
+<header class="nova-topbar">
+    <button class="nova-nav-toggle" type="button" data-nav-toggle aria-expanded="true" aria-controls="nova-primary-sidebar">
+        {{ icons.render('menu', theme.asset_base) }}<span class="visually-hidden">{{ trans('common.toggle_navigation') }}</span>
+    </button>
+    <a class="nova-brand" href="/"><span class="nova-brand-mark">N</span><span>{{ cms_name|default('NovaNuke') }}</span></a>
+    <nav class="nova-top-actions" aria-label="Account">
+        {% if notification_unread_count is defined %}<a href="/notifications">{{ icons.render('bell', theme.asset_base) }}<span>Notifications{% if notification_unread_count > 0 %} ({{ notification_unread_count }}){% endif %}</span></a>{% endif %}
+        {% if current_user %}<a href="/account/profile">{{ icons.render('user', theme.asset_base) }}<span>{{ current_user.username }}</span></a><form class="nova-logout-form" method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit"><span>{{ trans('common.sign_out') }}</span></button></form>{% else %}<a href="/login">{{ icons.render('user', theme.asset_base) }}<span>{{ trans('common.sign_in') }}</span></a>{% endif %}
+    </nav>
+</header>

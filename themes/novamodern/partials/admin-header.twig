@@ -1,0 +1,11 @@
+{% import 'partials/icon.twig' as icons %}
+<header class="nova-topbar nova-admin-topbar">
+    <button class="nova-nav-toggle" type="button" data-nav-toggle aria-expanded="true" aria-controls="nova-admin-sidebar">
+        {{ icons.render('menu', theme.asset_base) }}<span class="visually-hidden">{{ trans('admin.toggle_navigation') }}</span>
+    </button>
+    <a class="nova-brand" href="/admin"><span class="nova-brand-mark">N</span><span>{{ trans('admin.brand', {site_name: cms_name|default('NovaNuke')}) }}</span></a>
+    <nav class="nova-top-actions" aria-label="Administration shortcuts">
+        <a href="/">{{ icons.render('external', theme.asset_base) }}<span>{{ trans('admin.view_site') }}</span></a>
+        {% if current_user %}<a href="/account/profile">{{ icons.render('user', theme.asset_base) }}<span>{{ current_user.username }}</span></a>{% endif %}
+    </nav>
+</header>

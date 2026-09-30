@@ -1,0 +1,23 @@
+{
+    "name": "Web Links",
+    "slug": "web-links",
+    "version": "1.2.1",
+    "api_version": "1.0",
+    "description": "Curated external links with categories, submissions, protected visit counts and reports.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\WebLinks\\src\\WebLinksModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "web-links.manage"
+    ],
+    "navigation": {
+        "label": "modules.navigation.web_links",
+        "url": "/links",
+        "icon": "link",
+        "order": 40,
+        "audience": "public",
+        "public_landing": true
+    }
+}

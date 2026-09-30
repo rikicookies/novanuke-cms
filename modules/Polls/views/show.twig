@@ -1,0 +1,34 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ poll.question }} — {{ trans('polls::title') }}{% endblock %}
+{% block content %}
+<section class="polls-page poll-detail module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('polls::home'), url: '/'}, {label: trans('polls::title'), url: '/polls'}, {label: trans('polls::poll')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('polls::poll'), title: poll.question, description: poll.accepting ? trans('polls::voting_open') : trans('polls::voting_closed')} only %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    <div class="module-split">
+        <section class="module-section">
+            <div class="module-section-heading"><div><h2>{{ trans('polls::your_vote') }}</h2><p>{{ poll.allow_multiple ? trans('polls::choose_multiple', {count: poll.max_selections}) : trans('polls::choose_one') }}</p></div></div>
+            {% if poll.accepting and not has_voted %}
+            <form class="poll-form" method="post" action="/polls/{{ poll.id }}/vote" data-ajax-action data-ajax-replace=".poll-detail" data-ajax-success="{{ trans('polls::vote_recorded_ajax') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                {% for option in poll.options %}<label><span><input type="{{ poll.allow_multiple ? 'checkbox' : 'radio' }}" name="options[]" value="{{ option.id }}"> {{ option.label }}</span></label>{% endfor %}
+                <button class="module-button-primary" type="submit">{{ trans('polls::submit_vote') }}</button>
+            </form>
+            {% else %}
+                {% include 'components/empty-state.twig' with {title: has_voted ? trans('polls::vote_recorded') : trans('polls::closed'), message: has_voted ? trans('polls::thanks') : trans('polls::closed_help')} only %}
+            {% endif %}
+        </section>
+        <section class="module-section">
+            <div class="module-section-heading"><div><h2>{{ trans('polls::results') }}</h2><p>{{ poll.total_votes == 1 ? trans('polls::total_voter') : trans('polls::total_voters', {count: poll.total_votes}) }}</p></div></div>
+            <div class="poll-results">
+                {% for option in poll.options %}
+                    {% set percent = poll.total_votes > 0 ? (option.votes / poll.total_votes * 100) : 0 %}
+                    <div><span><strong>{{ option.label }}</strong> — {{ option.votes }} ({{ percent|round }}%)</span><progress max="100" value="{{ percent }}"></progress></div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+    <div class="module-action-row"><a class="module-link-button" href="/polls">{{ trans('polls::back') }}</a></div>
+</section>
+{% endblock %}

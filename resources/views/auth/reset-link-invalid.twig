@@ -1,0 +1,10 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.reset.invalid_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.recovery.eyebrow') }}</p>
+    <h1>{{ trans('auth.reset.invalid_title') }}</h1>
+    <p>{{ trans('auth.reset.invalid_message') }}</p>
+    <a class="install-button link-button" href="/forgot-password">{{ trans('auth.reset.request_another') }}</a>
+</section>
+{% endblock %}

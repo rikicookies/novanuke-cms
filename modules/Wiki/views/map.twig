@@ -1,0 +1,22 @@
+{% extends "layouts/default.twig" %}
+{% macro namespace_tree(namespaces) %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+    <ul class="wiki-map-tree">
+        {% for namespace in namespaces %}
+            <li><details open><summary><a href="/wiki?namespace={{ namespace.path|url_encode }}">{{ namespace.label }}</a></summary>
+                {% if namespace.pages %}<ul>{% for page in namespace.pages %}<li><a href="/wiki/{{ page.path }}">{{ page.title }}</a>{% if page.audience != 'public' %} <small>· {{ page.audience == 'vip' ? trans('wiki::audience.vip') : trans('wiki::audience.members') }}</small>{% endif %}</li>{% endfor %}</ul>{% endif %}
+                {% if namespace.namespaces %}{{ _self.namespace_tree(namespace.namespaces) }}{% endif %}
+            </details></li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+{% block title %}{{ trans('wiki::map.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="wiki-directory wiki-map">
+    <nav class="content-breadcrumbs" aria-label="{{ trans('wiki::breadcrumb') }}"><ol><li><a href="/wiki">{{ trans('wiki::index.title') }}</a></li><li><span aria-current="page">{{ trans('wiki::map.title') }}</span></li></ol></nav>
+    <header><p class="eyebrow">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ trans('wiki::map.title') }}</h1><p>{{ trans('wiki::map.description') }}</p></header>
+    {% if map.pages %}<section><h2>{{ trans('wiki::map.root') }}</h2><ul>{% for page in map.pages %}<li><a href="/wiki/{{ page.path }}">{{ page.title }}</a>{% if page.audience != 'public' %} <small>· {{ page.audience == 'vip' ? trans('wiki::audience.vip') : trans('wiki::audience.members') }}</small>{% endif %}</li>{% endfor %}</ul></section>{% endif %}
+    {% if map.namespaces %}{{ _self.namespace_tree(map.namespaces) }}{% endif %}
+    {% if not map.pages and not map.namespaces %}{% include 'components/empty-state.twig' with {title: trans('wiki::map.empty'), message: trans('wiki::map.empty_help')} only %}{% endif %}
+</section>
+{% endblock %}

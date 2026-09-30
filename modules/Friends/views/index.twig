@@ -1,0 +1,40 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('friends::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="friends-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('friends::home'), url: '/'}, {label: trans('friends::title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('friends::eyebrow'), title: trans('friends::title'), description: trans('friends::description')} only %}
+    {% include "auth/_social-nav.twig" %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    {% set groups=[
+        {slug: 'received', title: trans('friends::group.received'), people: received},
+        {slug: 'friends', title: trans('friends::group.friends'), people: friends},
+        {slug: 'sent', title: trans('friends::group.sent'), people: sent},
+        {slug: 'blocked', title: trans('friends::group.blocked'), people: blocked}
+    ] %}
+    {% for group in groups %}
+    <section class="module-section">
+        <div class="module-section-heading"><div><h2>{{ group.title }}</h2><p>{{ group.people|length == 1 ? trans('friends::person') : trans('friends::people', {count: group.people|length}) }}</p></div></div>
+        {% if group.people %}
+        <div class="user-grid">
+            {% for person in group.people %}
+            <article class="dashboard-card">
+                {% if person.avatar_path %}<img class="profile-avatar" src="{{ person.avatar_path }}" alt="">{% endif %}
+                <h3><a href="/users/{{ person.username }}">{{ person.display_name|default(person.username,true) }}</a></h3>
+                <p>@{{ person.username }}</p>
+                <div class="profile-actions">
+                    {% if group.slug == 'received' %}<form method="post" action="/friends/accept/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="{{ trans('friends::accepted_ajax') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>{{ trans('friends::accept') }}</button></form><form method="post" action="/friends/decline/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="{{ trans('friends::declined_ajax') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">{{ trans('friends::decline') }}</button></form>
+                    {% elseif group.slug == 'friends' %}<a class="module-link-button" href="/messages/compose?recipient={{ person.username|url_encode }}">{{ trans('friends::message') }}</a><form method="post" action="/friends/remove/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="{{ trans('friends::removed_ajax') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">{{ trans('friends::remove') }}</button></form>
+                    {% elseif group.slug == 'blocked' %}<form method="post" action="/friends/unblock/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="{{ trans('friends::unblocked_ajax') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>{{ trans('friends::unblock') }}</button></form>{% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+            {% include 'components/empty-state.twig' with {title: trans('friends::empty'), message: group.slug == 'friends' ? trans('friends::empty_friends') : trans('friends::empty_group')} only %}
+        {% endif %}
+    </section>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+# Installation and credentials
+/.env
+/.env.*
+!/.env.example
+!/.env.testing.example
+/vendor/
+
+# Local runtime data
+/storage/installed.lock
+/storage/cache/*
+!/storage/cache/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+/storage/private/*
+!/storage/private/.htaccess
+!/storage/private/backups/
+/storage/private/backups/*
+!/storage/private/backups/.gitkeep
+/public/uploads/*
+!/public/uploads/.htaccess
+/public/assets/themes/
+
+# Local tooling and archives
+/.idea/
+/.vscode/
+/.phpunit.cache/
+/phpunit.xml
+*.zip
+*.log

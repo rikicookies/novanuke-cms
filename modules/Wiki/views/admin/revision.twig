@@ -1,0 +1,16 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('wiki::admin.revision.label', {revision: revision.revision_number}) }} — {{ page.title }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-wiki-admin">
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('wiki::index.title'), url: '/admin/wiki'}, {label: page.title, url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: trans('wiki::admin.history.title'), url: '/admin/wiki/' ~ page.id ~ '/history'}, {label: trans('wiki::admin.revision.label', {revision: revision.revision_number})}]} only %}
+    {% include 'components/admin-page-heading.twig' with {eyebrow: trans('wiki::admin.revision.eyebrow'), title: trans('wiki::admin.revision.label', {revision: revision.revision_number}), description: revision.title ~ ' · ' ~ revision.actor ~ ' · ' ~ revision.created_at ~ ' UTC'} only %}
+    {% set status_labels = {'draft':trans('wiki::admin.status.draft'),'published':trans('wiki::admin.status.published')} %}{% set audience_labels = {'public':trans('wiki::admin.audience.public'),'member':trans('wiki::admin.audience.member'),'vip':trans('wiki::admin.audience.vip')} %}
+    <p><code>{{ revision.namespace ? revision.namespace ~ ':' : '' }}{{ revision.slug }}</code> · {{ status_labels[revision.status]|default(revision.status) }} · {{ audience_labels[revision.audience]|default(revision.audience) }}</p>
+    <article class="content-page"><div class="article-content">{{ revision.content_html }}</div></article>
+    {% if can_restore %}<form class="settings-form" method="post" action="/admin/wiki/{{ page.id }}/revisions/{{ revision.id }}/restore" onsubmit="return confirm('{{ trans('wiki::admin.revision.restore_confirm')|e('js') }}')">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label><input type="checkbox" name="confirm_restore" value="1" required> {{ trans('wiki::admin.revision.confirm') }}</label>
+        <button type="submit">{{ trans('wiki::admin.revision.restore') }}</button>
+    </form>{% else %}<div class="notice-message">{{ trans('wiki::admin.revision.permission') }}</div>{% endif %}
+</section>
+{% endblock %}

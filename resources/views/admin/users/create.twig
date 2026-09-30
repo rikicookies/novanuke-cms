@@ -1,0 +1,54 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.users.create') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-user-create-page">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.users.title'), url: '/admin/users'}, {label: trans('admin.users.create')}]} only %}
+
+  <div class="nn-page-heading">
+    <div><span class="nn-eyebrow">{{ trans('admin.users.eyebrow') }}</span><h1>{{ trans('admin.users.create') }}</h1><p>{{ trans('admin.users.create_description') }}</p></div>
+    <a class="nn-button nn-button-secondary" href="/admin/users"><i class="ph-arrow-left"></i>{{ trans('admin.users.back_to_users') }}</a>
+  </div>
+
+  {% if errors %}<div class="nn-form-alert"><i class="ph-warning-circle"></i><div><strong>{{ trans('admin.users.correct_form') }}</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div></div>{% endif %}
+
+  <form class="nn-create-user-form" method="post" action="/admin/users">
+    <input type="hidden" name="_token" value="{{ csrf_token }}">
+    <div class="nn-form-layout">
+      <div class="nn-form-main">
+        <section class="nn-card nn-form-section">
+          <header class="nn-card-header"><span class="nn-section-icon is-blue"><i class="ph-user-circle"></i></span><div><h2>{{ trans('admin.users.account_details') }}</h2><p>{{ trans('admin.users.account_details_help') }}</p></div></header>
+          <div class="nn-form-body nn-form-grid">
+            <label class="nn-field"><span>{{ trans('admin.users.username') }}</span><small>{{ trans('admin.users.username_help') }}</small><div class="nn-input-icon"><i class="ph-at"></i><input name="username" required minlength="3" maxlength="32" value="{{ old.username|default('') }}" autocomplete="off" placeholder="{{ trans('admin.users.username_placeholder') }}"></div></label>
+            <label class="nn-field"><span>{{ trans('common.email') }}</span><small>{{ trans('admin.users.email_help') }}</small><div class="nn-input-icon"><i class="ph-envelope-simple"></i><input type="email" name="email" required maxlength="254" value="{{ old.email|default('') }}" autocomplete="off" placeholder="name@example.com"></div></label>
+          </div>
+        </section>
+
+        <section class="nn-card nn-form-section">
+          <header class="nn-card-header"><span class="nn-section-icon is-purple"><i class="ph-key"></i></span><div><h2>{{ trans('admin.users.security') }}</h2><p>{{ trans('admin.users.security_help') }}</p></div></header>
+          <div class="nn-form-body nn-form-grid">
+            <label class="nn-field"><span>{{ trans('admin.users.initial_password') }}</span><small>{{ trans('admin.users.password_help') }}</small><div class="nn-input-icon"><i class="ph-lock-key"></i><input type="password" name="password" required minlength="12" maxlength="255" autocomplete="new-password"></div></label>
+            <label class="nn-field"><span>{{ trans('admin.users.confirm_password') }}</span><small>{{ trans('admin.users.confirm_password_help') }}</small><div class="nn-input-icon"><i class="ph-lock-key-open"></i><input type="password" name="password_confirmation" required minlength="12" maxlength="255" autocomplete="new-password"></div></label>
+            <label class="nn-toggle-card nn-form-span-2"><input type="checkbox" name="must_change_password" value="1" checked><span class="nn-toggle-ui"></span><span><strong>{{ trans('admin.users.require_password_change') }}</strong><small>{{ trans('admin.users.require_password_help') }}</small></span></label>
+          </div>
+        </section>
+      </div>
+
+      <aside class="nn-form-side">
+        <section class="nn-card nn-form-section">
+          <header class="nn-card-header"><span class="nn-section-icon is-green"><i class="ph-shield-check"></i></span><div><h2>{{ trans('admin.users.access') }}</h2><p>{{ trans('admin.users.access_help') }}</p></div></header>
+          <div class="nn-form-body">
+            <label class="nn-field"><span>{{ trans('admin.users.role') }}</span><small>{{ trans('admin.users.role_help') }}</small><select name="role_id" required><option value="">{{ trans('admin.users.select_role') }}</option>{% for role in roles %}<option value="{{ role.id }}"{% if old.role_id|default('') == role.id %} selected{% endif %}>{{ role.name }} ({{ role.slug }})</option>{% endfor %}</select></label>
+            <div class="nn-access-note"><i class="ph-info"></i><span>{{ trans('admin.users.access_note') }}</span></div>
+          </div>
+        </section>
+
+        <section class="nn-card nn-create-summary">
+          <div class="nn-create-summary-icon"><i class="ph-user-plus"></i></div><h3>{{ trans('admin.users.ready_title') }}</h3><p>{{ trans('admin.users.ready_help') }}</p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="nn-form-actions"><a class="nn-button nn-button-secondary" href="/admin/users">{{ trans('common.cancel') }}</a><button class="nn-button nn-button-primary" type="submit"><i class="ph-user-plus"></i>{{ trans('admin.users.create') }}</button></div>
+  </form>
+</section>
+{% endblock %}

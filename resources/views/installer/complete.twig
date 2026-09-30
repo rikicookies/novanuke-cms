@@ -1,0 +1,14 @@
+{% extends "installer/base.twig" %}
+
+{% block title %}{{ trans('installer.complete.title') }}{% endblock %}
+
+{% block content %}
+<section class="complete-card">
+    <div class="success-icon">✓</div>
+    <p class="eyebrow">{{ trans('installer.complete.eyebrow') }}</p>
+    <h1>{{ trans('installer.complete.heading', {site_name: site_name}) }}</h1>
+    <p>{{ trans('installer.complete.summary', {count: migrations_count}) }}</p>
+    <p>{{ trans('installer.complete.locked') }}</p>
+    <a class="install-button link-button" href="/">{{ trans('installer.complete.open') }}</a>
+</section>
+{% endblock %}

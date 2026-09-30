@@ -1,0 +1,19 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('search::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+{% set type_labels = {'news': trans('search::type.news'), 'pages': trans('search::type.pages'), 'downloads': trans('search::type.downloads'), 'wiki': trans('search::type.wiki')} %}
+<section class="search-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('search::home'), url: '/'}, {label: trans('search::title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('search::eyebrow'), title: trans('search::title'), description: trans('search::description')} only %}
+    <form class="search-form" method="get" action="/search">
+        <div class="form-grid"><label>{{ trans('search::keywords') }}<input type="search" name="q" minlength="2" maxlength="100" required value="{{ term }}"></label><label>{{ trans('search::content_type') }}<select name="type"><option value="">{{ trans('search::all_content') }}</option>{% for type in types %}<option value="{{ type.value }}" {{ selected_type == type.value ? 'selected' : '' }}>{{ type_labels[type.value]|default(type.label) }}</option>{% endfor %}</select></label></div>
+        <button class="module-button-primary" type="submit">{{ trans('search::submit') }}</button>
+    </form>
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    {% if result %}
+        <div class="module-section-heading"><div><h2>{{ trans('search::results') }}</h2><p>{{ result.total == 1 ? trans('search::result_count_one', {term: term}) : trans('search::result_count', {count: result.total, term: term}) }}</p></div></div>
+        {% if result.items %}<div class="search-results">{% for item in result.items %}<article class="search-result surface-card"><div class="surface-card-meta"><span>{{ type_labels[item.type]|default(item.type|title) }}</span><span>{{ item.published_at|date(cms_date_format, cms_timezone) }}</span></div><h2><a href="{{ item.url }}">{{ item.title_html }}</a></h2><p>{{ item.excerpt_html }}</p></article>{% endfor %}</div>{% else %}{% include 'components/empty-state.twig' with {title: trans('search::empty'), message: trans('search::empty_help')} only %}{% endif %}
+        {% if result.pages > 1 %}<nav class="pagination" aria-label="{{ trans('search::pagination') }}">{% for page in 1..result.pages %}<a class="{{ page == result.page ? 'current' : '' }}" href="/search?q={{ term|url_encode }}&type={{ selected_type|url_encode }}&page={{ page }}">{{ page }}</a>{% endfor %}</nav>{% endif %}
+    {% elseif not error %}{% include 'components/empty-state.twig' with {title: trans('search::start'), message: trans('search::start_help')} only %}{% endif %}
+</section>
+{% endblock %}

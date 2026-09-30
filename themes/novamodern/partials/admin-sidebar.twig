@@ -1,0 +1,22 @@
+{% import 'partials/icon.twig' as icons %}
+<aside class="nova-sidebar nova-admin-sidebar" id="nova-admin-sidebar" data-sidebar>
+    <div class="nova-sidebar-heading"><span class="nova-sidebar-icon">{{ icons.render('dashboard', theme.asset_base) }}</span><strong>{{ trans('admin.title') }}</strong></div>
+    <nav aria-label="{{ trans('admin.title') }}">
+        {% for group in admin_navigation|default([]) %}
+            <section class="nova-nav-group">
+                <h2>{{ trans(group.label) }}</h2>
+                <ul>
+                    {% for item in group.items %}
+                        <li class="{{ item.active ? 'is-active' : '' }}">
+                            <a href="{{ item.url }}" title="{{ trans(item.label) }}">
+                                {{ icons.render(item.icon, theme.asset_base) }}<span>{{ trans(item.label) }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% else %}
+            <p class="nova-nav-empty">{{ trans('admin.navigation_empty') }}</p>
+        {% endfor %}
+    </nav>
+</aside>

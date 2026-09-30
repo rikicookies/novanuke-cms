@@ -1,0 +1,62 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('search::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-search-admin nn-search-v29">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('search::title')}]} only %}
+
+  <header class="nn-search-hero">
+    <div class="nn-search-hero-copy">
+      <span class="nn-page-eyebrow">{{ trans('search::admin.eyebrow') }}</span>
+      <h1>{{ trans('search::admin.title') }}</h1>
+      <p>{{ trans('search::admin.description') }}</p>
+    </div>
+    <a class="btn btn-light nn-btn-compact" href="/search"><i class="ph-magnifying-glass"></i><span>{{ trans('search::admin.open_search') }}</span></a>
+  </header>
+
+  {% if message %}<div class="nn-alert nn-alert-success"><i class="ph-check-circle"></i><span>{{ message }}</span></div>{% endif %}
+
+  <div class="nn-search-kpis">
+    <article class="nn-search-kpi">
+      <span class="nn-search-kpi-icon is-blue"><i class="ph-chart-bar"></i></span>
+      <div class="nn-search-kpi-copy"><span>{{ trans('search::admin.tracked_terms') }}</span><strong>{{ popular|length }}</strong><small>{{ trans('search::admin.tracked_terms_help') }}</small></div>
+    </article>
+    <article class="nn-search-kpi">
+      <span class="nn-search-kpi-icon {{ logging_enabled ? 'is-green' : 'is-amber' }}"><i class="{{ logging_enabled ? 'ph-check-circle' : 'ph-pause-circle' }}"></i></span>
+      <div class="nn-search-kpi-copy"><span>{{ trans('search::admin.logging_status') }}</span><strong class="{{ logging_enabled ? 'is-enabled' : 'is-disabled' }}">{{ trans(logging_enabled ? 'search::admin.enabled' : 'search::admin.disabled') }}</strong><small>{{ trans('search::admin.privacy_summary') }}</small></div>
+    </article>
+    <article class="nn-search-kpi">
+      <span class="nn-search-kpi-icon is-violet"><i class="ph-shield-check"></i></span>
+      <div class="nn-search-kpi-copy"><span>{{ trans('search::admin.privacy') }}</span><strong>{{ trans('search::admin.aggregate_only') }}</strong><small>{{ trans('search::admin.privacy_help') }}</small></div>
+    </article>
+  </div>
+
+  <div class="nn-search-grid">
+    <section class="nn-search-card nn-search-analytics">
+      <header class="nn-search-card-head">
+        <div><span class="nn-search-kicker">{{ trans('search::admin.analytics') }}</span><h2>{{ trans('search::admin.popular') }}</h2><p>{{ trans('search::admin.popular_help') }}</p></div>
+        <span class="nn-search-count-pill">{{ popular|length }}</span>
+      </header>
+      {% if popular %}
+        <div class="nn-search-table-wrap"><table><thead><tr><th>{{ trans('search::admin.term') }}</th><th>{{ trans('search::admin.searches') }}</th><th>{{ trans('search::admin.last_searched') }}</th></tr></thead><tbody>
+        {% for item in popular %}<tr><td><div class="nn-search-term"><span><i class="ph-magnifying-glass"></i></span><strong>{{ item.term }}</strong></div></td><td><span class="nn-search-volume">{{ item.search_count }}</span></td><td class="nn-search-date">{{ item.last_searched_at }}</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}
+        <div class="nn-search-empty"><span class="nn-search-empty-icon"><i class="ph-chart-line-up"></i></span><h3>{{ trans('search::admin.empty') }}</h3><p>{{ trans(logging_enabled ? 'search::admin.empty_enabled' : 'search::admin.empty_disabled') }}</p></div>
+      {% endif %}
+    </section>
+
+    <aside class="nn-search-card nn-search-config">
+      <header class="nn-search-card-head is-compact"><div><span class="nn-search-kicker">{{ trans('search::admin.settings_kicker') }}</span><h2>{{ trans('search::admin.settings_title') }}</h2><p>{{ trans('search::admin.settings_help') }}</p></div></header>
+      <form method="post" action="/admin/search">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="nn-search-switch-row">
+          <span class="nn-search-switch-copy"><span class="nn-search-switch-title"><i class="ph-chart-line"></i>{{ trans('search::admin.log_terms') }}</span><small>{{ trans('search::admin.log_terms_help') }}</small></span>
+          <span class="nn-search-switch"><input type="checkbox" name="log_terms" value="1" {{ logging_enabled ? 'checked' : '' }}><i></i></span>
+        </label>
+        <div class="nn-search-privacy"><span><i class="ph-lock-key"></i></span><div><strong>{{ trans('search::admin.privacy') }}</strong><p>{{ trans('search::admin.privacy_note') }}</p></div></div>
+        <button class="btn btn-primary w-100" type="submit"><i class="ph-floppy-disk me-2"></i>{{ trans('search::admin.save') }}</button>
+      </form>
+    </aside>
+  </div>
+</section>
+{% endblock %}

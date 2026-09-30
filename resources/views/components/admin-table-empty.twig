@@ -1,0 +1,11 @@
+<tr class="admin-table-empty-row">
+    <td colspan="{{ colspan }}">
+        <div class="admin-table-empty" role="status">
+            <strong>{{ title }}</strong>
+            {% if message|default('') %}<p>{{ message }}</p>{% endif %}
+            {% if action_url|default(null) and action_label|default(null) %}
+                <a class="content-action" href="{{ action_url }}">{{ action_label }}</a>
+            {% endif %}
+        </div>
+    </td>
+</tr>

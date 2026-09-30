@@ -1,0 +1,39 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('downloads::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-downloads-index">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('downloads::title')}]} only %}
+  <header class="nl-page-heading nl-downloads-heading">
+    <div><span class="nl-eyebrow">{{ trans('downloads::eyebrow') }}</span><h1>{{ trans('downloads::title') }}</h1></div>
+    {% if manage_url %}<div class="nl-heading-actions"><a href="{{ manage_url }}">{{ trans('downloads::manage') }}</a></div>{% endif %}
+  </header>
+
+  <form class="nl-download-toolbar" method="get" action="/downloads">
+    <label class="nl-download-search"><span aria-hidden="true">⌕</span><input name="q" maxlength="100" value="{{ search }}" placeholder="{{ trans('downloads::search_placeholder') }}"></label>
+    <select name="order" aria-label="{{ trans('downloads::search') }}"><option value="new" {{ order == 'new' ? 'selected' : '' }}>{{ trans('downloads::order.new') }}</option><option value="popular" {{ order == 'popular' ? 'selected' : '' }}>{{ trans('downloads::order.popular') }}</option><option value="name" {{ order == 'name' ? 'selected' : '' }}>{{ trans('downloads::order.name') }}</option></select>
+    <button class="nl-primary-button" type="submit">{{ trans('downloads::search') }}</button>
+  </form>
+
+  {% if categories|length %}<nav class="nl-download-categories" aria-label="{{ trans('downloads::title') }}">
+    <a class="nl-download-category {{ not selected_category ? 'is-active' : '' }}" href="/downloads"><span class="nl-download-category-icon">{{ trans('theme::all_short') }}</span><strong>{{ trans('downloads::all') }}</strong></a>
+    {% for category in categories %}<a class="nl-download-category nl-download-category-{{ (loop.index0 % 4) + 1 }} {{ selected_category == category.slug ? 'is-active' : '' }}" href="/downloads/category/{{ category.slug }}"><span class="nl-download-category-icon">{{ category.name|slice(0,2)|upper }}</span><strong>{{ category.parent_name ? category.parent_name ~ ' / ' : '' }}{{ category.name }}</strong></a>{% endfor %}
+  </nav>{% endif %}
+
+  {% if result.items|length %}
+    {% set featured = result.items|first %}
+    <article class="nl-download-feature {{ featured.image_path ? 'has-image' : '' }}">
+      <div class="nl-download-feature-copy"><div class="nl-kicker">{% if featured.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('downloads::featured') }}</span>{% endif %}<span class="nl-category-pill">{{ featured.category_name|default(trans('downloads::uncategorized'), true) }}</span></div>
+      <h2><a href="/downloads/{{ featured.slug }}">{{ featured.name }}</a></h2><p>{{ featured.description_text|slice(0,280) }}</p>
+      <div class="nl-download-meta-line">{% if featured.version %}<span>v{{ featured.version }}</span><span>•</span>{% endif %}{% if featured.author_name %}<span>{{ featured.author_name }}</span><span>•</span>{% endif %}<span>{{ trans('downloads::count', {count: featured.download_count}) }}</span></div>
+      <a class="nl-primary-button" href="/downloads/{{ featured.slug }}">{{ trans('downloads::download') }} <span>→</span></a></div>
+      <a class="nl-download-feature-media" href="/downloads/{{ featured.slug }}" aria-label="{{ featured.name }}">{% if featured.image_path %}<img src="{{ featured.image_path }}" alt="">{% else %}<div class="nl-package-art"><span>↓</span></div>{% endif %}</a>
+    </article>
+
+    {% if result.items|length > 1 %}<div class="nl-download-grid">{% for item in result.items|slice(1) %}<article class="nl-download-card">
+      <a class="nl-download-card-media" href="/downloads/{{ item.slug }}">{% if item.image_path %}<img src="{{ item.image_path }}" alt="">{% else %}<span class="nl-download-file-icon">↓</span>{% endif %}</a>
+      <div class="nl-download-card-body"><div class="nl-kicker">{% if item.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('downloads::featured') }}</span>{% endif %}<span class="nl-category-pill">{{ item.category_name|default(trans('downloads::uncategorized'), true) }}</span></div><h2><a href="/downloads/{{ item.slug }}">{{ item.name }}</a></h2><p>{{ item.description_text|slice(0,180) }}</p><div class="nl-download-card-footer"><small>{% if item.version %}v{{ item.version }} · {% endif %}{{ trans('downloads::count', {count: item.download_count}) }}</small><a href="/downloads/{{ item.slug }}">{{ trans('downloads::download') }} →</a></div></div>
+    </article>{% endfor %}</div>{% endif %}
+  {% else %}{% include 'components/empty-state.twig' with {title: trans('downloads::empty'), message: trans('downloads::empty_help')} only %}{% endif %}
+  {% set pagination_url = '?q=' ~ (search|url_encode) ~ '&order=' ~ (order|url_encode) ~ '&page={page}' %}{% include 'components/pagination.twig' with {current_page: result.page, total_pages: result.pages, url_template: pagination_url, label: trans('downloads::pagination')} only %}
+</section>
+{% endblock %}

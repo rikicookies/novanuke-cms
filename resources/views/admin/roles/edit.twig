@@ -1,0 +1,8 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.roles.permissions_title', {name: role.name}) }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="admin-page nn-admin-workspace">
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.roles.title'), url: '/admin/roles'}, {label: role.name}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('admin.roles.eyebrow'), title: role.name, description: role.slug} only %}
+{% if saved %}<div class="success-message">{{ trans('admin.roles.saved') }}</div>{% endif %}{% if role.slug == 'super-administrator' %}<div class="notice-message">{{ trans('admin.roles.protected_help') }}</div>{% endif %}
+<form method="post" action="/admin/roles/{{ role.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><div class="permission-grid">{% for permission in permissions %}<label class="toggle-row"><input type="checkbox" name="permissions[]" value="{{ permission.id }}" {% if permission.selected %}checked{% endif %} {% if role.slug == 'super-administrator' %}disabled{% endif %}><span><strong>{{ permission.name }}</strong><code>{{ permission.slug }}</code><small>{{ permission.description }}</small></span></label>{% endfor %}</div>{% if role.slug != 'super-administrator' %}<button class="install-button" type="submit">{{ trans('admin.roles.save') }}</button>{% endif %}</form>
+</section>{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('web-links::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="links-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('web-links::title')}]} only %}
+    {% set header_actions = manage_url ? [{label: trans('web-links::manage'), url: manage_url}, {label: trans('web-links::submit'), url: '/links/submit'}] : [{label: trans('web-links::submit'), url: '/links/submit'}] %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('web-links::eyebrow'), title: trans('web-links::title'), actions: header_actions} only %}
+    <nav class="category-links"><a href="/links">{{ trans('web-links::all') }}</a>{% for item in categories %}<a href="/links/category/{{ item.slug }}">{{ item.name }}</a>{% endfor %}</nav>
+    <form class="link-filters" method="get"><input name="q" maxlength="100" value="{{ search }}" placeholder="{{ trans('web-links::search_placeholder') }}"><select name="order"><option value="new">{{ trans('web-links::order.new') }}</option><option value="popular" {{ order == 'popular' ? 'selected' : '' }}>{{ trans('web-links::order.popular') }}</option><option value="title" {{ order == 'title' ? 'selected' : '' }}>{{ trans('web-links::order.title') }}</option></select><button>{{ trans('web-links::search') }}</button></form>
+    <div class="link-grid">{% for item in result.items %}<article>{% if item.image_path %}<img src="{{ item.image_path }}" alt="">{% endif %}{% if item.is_featured %}<span class="badge badge-active">{{ trans('web-links::featured') }}</span>{% endif %}<h2><a href="/links/{{ item.slug }}">{{ item.title }}</a></h2><p>{{ item.description_text|slice(0,220) }}</p><small>{{ item.category_name|default(trans('web-links::uncategorized'),true) }} · {{ trans('web-links::visits', {count: item.visit_count}) }}</small></article>{% else %}{% include 'components/empty-state.twig' with {title: trans('web-links::empty'), message: trans('web-links::empty_help'), action_url: '/links/submit', action_label: trans('web-links::submit')} only %}{% endfor %}</div>
+    {% set pagination_url = '?q=' ~ (search|url_encode) ~ '&order=' ~ (order|url_encode) ~ '&page={page}' %}{% include 'components/pagination.twig' with {current_page: result.page, total_pages: result.pages, url_template: pagination_url, label: trans('web-links::pagination')} only %}
+</section>
+{% endblock %}

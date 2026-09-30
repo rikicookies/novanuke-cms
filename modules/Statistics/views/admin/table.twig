@@ -1,0 +1,5 @@
+{% if rows %}
+<div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('statistics::table.' ~ label) }}</th><th>{{ trans('statistics::table.views') }}</th></tr></thead><tbody>{% for item in rows %}<tr><td>{{ attribute(item,label) }}</td><td>{{ item.views }}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+{% include 'components/empty-state.twig' with {title: trans('statistics::empty.title'), message: trans('statistics::empty.breakdown')} only %}
+{% endif %}

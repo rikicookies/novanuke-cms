@@ -1,0 +1,11 @@
+<footer class="nova-site-footer">
+    <div class="nova-site-footer-inner">
+        <p><strong>{{ cms_name|default('NovaNuke') }}</strong> · {{ trans('theme::footer_tagline') }}</p>
+        <nav class="nova-site-footer-links" aria-label="{{ trans('theme::footer_navigation') }}">
+            <a href="/">{{ trans('theme::footer_home') }}</a>
+            <a href="/news">{{ trans('theme::footer_news') }}</a>
+            <a href="/downloads">{{ trans('theme::footer_downloads') }}</a>
+        </nav>
+        <p>{{ trans('theme::footer_powered_by') }} NovaNuke</p>
+    </div>
+</footer>

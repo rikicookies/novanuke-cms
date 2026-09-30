@@ -1,0 +1,15 @@
+{% extends "layouts/default.twig" %}
+
+{% block content %}
+    <section class="welcome-card">
+        <p class="eyebrow">{{ trans('home.version', {version: version}) }}</p>
+        <h1>{{ home_content.headline }}</h1>
+        <p>{{ home_content.description }}</p>
+        {% if user %}
+            <p>{{ trans('home.signed_in', {username: user.username}) }}</p>
+            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">{{ trans('common.sign_out') }}</button></form>
+        {% else %}
+            <p><a class="auth-link" href="/login">{{ trans('common.sign_in') }}</a> · <a class="auth-link" href="/register">{{ trans('common.create_account') }}</a></p>
+        {% endif %}
+    </section>
+{% endblock %}

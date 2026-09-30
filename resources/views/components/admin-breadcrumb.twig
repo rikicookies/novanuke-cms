@@ -1,0 +1,5 @@
+{% set trail = items|default([]) %}
+{% if trail %}<div class="mb-3"><div class="breadcrumb mb-0">
+<a href="/admin" class="breadcrumb-item"><i class="ph-house me-2"></i>{{ trans('admin.title') }}</a>
+{% for item in trail %}{% if not (loop.first and item.url|default('') == '/admin') %}{% if item.url|default(null) %}<a href="{{ item.url }}" class="breadcrumb-item">{{ item.label }}</a>{% else %}<span class="breadcrumb-item active">{{ item.label }}</span>{% endif %}{% endif %}{% endfor %}
+</div></div>{% endif %}

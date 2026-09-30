@@ -1,0 +1,9 @@
+<nav class="social-nav" aria-label="{{ trans('social.navigation') }}">
+    <a href="/users">{{ trans('social.members') }}</a>
+    {% if current_user %}
+        <a href="/account/profile">{{ trans('social.profile') }}</a>
+        {% if friends_available|default(false) %}<a href="/friends">{{ trans('social.friends') }}</a>{% endif %}
+        {% if private_messages_available|default(false) %}<a href="/messages">{{ trans('social.messages') }}</a>{% endif %}
+        {% if notification_unread_count is defined %}<a href="/notifications">{{ trans('social.notifications') }}{% if notification_unread_count > 0 %} ({{ notification_unread_count }}){% endif %}</a>{% endif %}
+    {% endif %}
+</nav>

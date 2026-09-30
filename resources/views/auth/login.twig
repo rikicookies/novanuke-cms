@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.login.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.login.eyebrow') }}</p>
+    <h1>{{ trans('auth.login.heading') }}</h1>
+    <p>{{ trans('auth.login.description', {site_name: cms_name|default('NovaNuke')}) }}</p>
+    {% if password_changed %}<div class="success-message">{{ trans('account.password.changed') }}</div>{% endif %}
+    {% if errors %}<div class="form-errors"><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+    <form method="post" action="/login">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('auth.login.identifier') }}<input name="login" value="{{ old_login }}" required autofocus autocomplete="username"></label>
+        <label>{{ trans('common.password') }}<input type="password" name="password" required autocomplete="current-password"></label>
+        <button type="submit">{{ trans('common.sign_in') }}</button>
+        <a class="auth-link" href="/forgot-password">{{ trans('auth.login.forgot') }}</a>
+        <a class="auth-link" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>
+        <a class="auth-link" href="/register">{{ trans('common.create_account') }}</a>
+    </form>
+</section>
+{% endblock %}

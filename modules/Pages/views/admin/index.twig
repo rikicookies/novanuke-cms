@@ -1,0 +1,36 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('pages::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('pages::title')}]} only %}
+  {% include 'components/admin-page-heading.twig' with {eyebrow: trans('pages::admin.eyebrow'), title: trans('pages::title'), description: trans('pages::admin.description'), actions: [{label: trans('pages::admin.create'), url: '/admin/pages/new', icon:'ph-plus'}, {label: trans('pages::admin.view'), url: '/pages', icon:'ph-arrow-square-out'}]} only %}
+  {% if message %}<div class="alert alert-success border-0 shadow-sm"><i class="ph-check-circle me-2"></i>{{ message }}</div>{% endif %}
+  {% set audience_labels = {'public':trans('pages::field.public'),'members':trans('pages::field.members'),'vip':trans('pages::field.vip'),'roles':trans('pages::field.roles')} %}
+  <div class="card nn-golden-card">
+    <div class="card-header d-flex align-items-center py-3">
+      <div>
+        <div class="d-flex align-items-center gap-2"><h5 class="mb-0">{{ trans('pages::title') }}</h5><span class="badge bg-light text-muted">{{ pages|length }}</span></div>
+        <div class="text-muted fs-sm mt-1">{{ trans('pages::admin.description') }}</div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table nn-golden-table mb-0">
+        <thead><tr><th>{{ trans('pages::admin.page') }}</th><th>{{ trans('pages::admin.status') }}</th><th>{{ trans('pages::admin.access') }}</th><th>{{ trans('pages::admin.template') }}</th><th>{{ trans('pages::admin.publication') }}</th><th class="text-end">{{ trans('pages::admin.actions') }}</th></tr></thead>
+        <tbody>
+        {% for page in pages %}
+          <tr>
+            <td class="nn-primary-cell"><div class="fw-semibold text-body">{{ page.title }}</div><div class="text-muted fs-sm mt-1"><i class="ph-link me-1"></i>/pages/{{ page.slug }}{% if page.username %}<span class="mx-1">·</span><i class="ph-user me-1"></i>{{ page.username }}{% endif %}{% if page.parent_title %}<span class="mx-1">·</span>{{ trans('pages::admin.child_of', {parent: page.parent_title}) }}{% endif %}</div></td>
+            <td><span class="badge {{ page.status == 'published' ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' }}"><span class="nn-status-dot me-1"></span>{{ trans('pages::field.' ~ page.status) }}</span></td>
+            <td><span class="d-inline-flex align-items-center gap-1"><i class="{{ page.access_type == 'public' ? 'ph-globe' : (page.access_type == 'vip' ? 'ph-star' : 'ph-users') }} text-muted"></i>{{ audience_labels[page.access_type]|default(page.access_type) }}</span></td>
+            <td><span class="badge bg-primary bg-opacity-10 text-primary">{{ trans('pages::field.' ~ page.template) }}</span></td>
+            <td><span class="d-inline-flex align-items-center gap-2"><i class="ph-calendar-blank text-muted"></i>{{ page.published_at|default('—', true) }}</span></td>
+            <td class="text-end"><div class="d-inline-flex gap-1"><a class="btn btn-light btn-icon btn-sm" href="/admin/pages/{{ page.id }}/edit" title="{{ trans('pages::admin.edit') }}"><i class="ph-pencil-simple"></i></a>{% if page.status == 'published' %}<a class="btn btn-light btn-icon btn-sm" href="/pages/{{ page.slug }}" title="{{ trans('pages::admin.view') }}"><i class="ph-arrow-square-out"></i></a>{% endif %}<details class="nn-more-actions d-inline-block"><summary class="btn btn-light btn-icon btn-sm" aria-label="{{ trans('pages::admin.actions') }}"><i class="ph-dots-three-vertical"></i></summary><div class="nn-more-menu"><a href="/admin/pages/{{ page.id }}/edit"><i class="ph-pencil-simple"></i>{{ trans('pages::admin.edit') }}</a>{% if page.status == 'published' %}<a href="/pages/{{ page.slug }}"><i class="ph-arrow-square-out"></i>{{ trans('pages::admin.view') }}</a>{% endif %}</div></details></div></td>
+          </tr>
+        {% else %}
+          {% include 'components/admin-table-empty.twig' with {colspan: 6, title: trans('pages::admin.empty'), message: trans('pages::admin.empty_help'), action_url: '/admin/pages/new', action_label: trans('pages::admin.create')} only %}
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pages|length %}<div class="card-footer bg-white border-top d-flex justify-content-between align-items-center text-muted fs-sm"><span>{{ pages|length }} {{ trans('pages::title') }}</span></div>{% endif %}
+  </div>
+{% endblock %}

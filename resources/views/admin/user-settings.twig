@@ -1,0 +1,26 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.user_settings.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<div class="nn-user-settings-v2">
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.user_settings.title')}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('admin.user_settings.eyebrow'), title: trans('admin.user_settings.title'), description: trans('admin.user_settings.description'), actions: [{label: trans('admin.user_settings.manage_users'), url: '/admin/users', icon:'ph-users'}]} only %}
+{% if saved %}<div class="alert alert-success alert-icon-start"><span class="alert-icon bg-success text-white"><i class="ph-check"></i></span>{{ trans('admin.user_settings.saved') }}</div>{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex align-items-center gap-3"><span class="nn-us-icon is-purple"><i class="ph-lock-key"></i></span><div><div class="text-muted fs-sm">{{ trans('admin.user_settings.private_site') }}</div><div class="fw-semibold">{{ trans(private_site ? 'admin.user_settings.state.enabled' : 'admin.user_settings.state.disabled') }}</div></div></div></div></div>
+  <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex align-items-center gap-3"><span class="nn-us-icon is-blue"><i class="ph-user-plus"></i></span><div><div class="text-muted fs-sm">{{ trans('admin.user_settings.registration_open') }}</div><div class="fw-semibold">{{ trans(registration_open ? 'admin.user_settings.state.open' : 'admin.user_settings.state.closed') }}</div></div></div></div></div>
+  <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex align-items-center gap-3"><span class="nn-us-icon is-green"><i class="ph-envelope-simple-open"></i></span><div><div class="text-muted fs-sm">{{ trans('admin.user_settings.verification') }}</div><div class="fw-semibold">{{ trans(verification_required ? 'admin.user_settings.state.required' : 'admin.user_settings.state.optional') }}</div></div></div></div></div>
+</div>
+
+<form method="post" action="/admin/settings/users" class="card nn-us-card">
+  <input type="hidden" name="_token" value="{{ csrf_token }}">
+  <div class="card-header py-3"><h5 class="mb-1">{{ trans('admin.user_settings.access_title') }}</h5><div class="text-muted fs-sm">{{ trans('admin.user_settings.access_help') }}</div></div>
+  <div class="card-body p-0">
+    <label class="nn-us-setting"><span class="nn-us-setting-icon is-purple"><i class="ph-lock-key"></i></span><span class="nn-us-copy"><strong>{{ trans('admin.user_settings.private_site') }}</strong><small>{{ trans('admin.user_settings.private_site_help') }}</small></span><input type="checkbox" name="private_site" value="1" {% if private_site %}checked{% endif %}><span class="nn-us-switch"></span></label>
+    <label class="nn-us-setting"><span class="nn-us-setting-icon is-blue"><i class="ph-user-plus"></i></span><span class="nn-us-copy"><strong>{{ trans('admin.user_settings.registration_open') }}</strong><small>{{ trans('admin.user_settings.registration_open_help') }}</small></span><input type="checkbox" name="registration_open" value="1" {% if registration_open %}checked{% endif %}><span class="nn-us-switch"></span></label>
+    <label class="nn-us-setting"><span class="nn-us-setting-icon is-green"><i class="ph-envelope-simple-open"></i></span><span class="nn-us-copy"><strong>{{ trans('admin.user_settings.verification') }}</strong><small>{{ trans('admin.user_settings.verification_help') }}</small></span><input type="checkbox" name="email_verification_required" value="1" {% if verification_required %}checked{% endif %}><span class="nn-us-switch"></span></label>
+  </div>
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center gap-3 flex-wrap"><div class="text-muted fs-sm"><i class="ph-shield-check me-1"></i>{{ trans('admin.user_settings.security_note') }}</div><button class="btn btn-primary" type="submit"><i class="ph-floppy-disk me-1"></i>{{ trans('admin.user_settings.save') }}</button></div>
+</form>
+</div>
+{% endblock %}

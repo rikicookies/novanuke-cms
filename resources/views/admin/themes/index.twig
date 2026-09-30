@@ -1,0 +1,47 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.themes.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-control-page nn-themes-v2">
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.themes.title')}]} only %}
+    {% include 'components/admin-page-heading.twig' with {eyebrow: trans('admin.themes.eyebrow'), title: trans('admin.themes.title'), description: trans('admin.themes.description')} only %}
+    <p>{{ trans('admin.themes.help') }}</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    <div class="theme-grid" id="theme-grid">
+        {% for slug, item in themes %}
+        <article class="theme-card {{ item.active ? 'active-theme' : '' }}">
+            {% if item.installed and item.manifest and item.manifest.screenshot %}<img src="/assets/themes/{{ slug }}/{{ item.manifest.screenshot }}" alt="{{ trans('admin.themes.screenshot_alt', {name: item.manifest.name}) }}">
+            {% else %}<div class="theme-placeholder">{{ item.manifest ? item.manifest.name : item.name }}</div>{% endif %}
+            <div class="theme-card-body">
+                <div class="module-heading"><div><h2>{{ item.manifest ? item.manifest.name : item.name }}</h2><code>{{ slug }}</code></div>{% if item.active %}<span class="badge badge-active">{{ trans('admin.themes.active') }}</span>{% endif %}</div>
+                {% if item.manifest %}<p>{{ item.manifest.description }}</p><small>{{ trans('admin.themes.version_summary', {available: item.manifest.version, installed: item.installed_version ?: '—'}) }}</small>{% endif %}
+                {% if not item.compatible %}<div class="notice-message">{{ item.compatibility_reason }}</div>{% endif %}
+                <div class="module-actions">
+                {% if not item.installed and item.manifest and item.compatible %}<form method="post" action="/admin/themes/{{ slug }}/install" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="{{ trans('admin.themes.ajax.installed') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('admin.themes.install') }}</button></form>
+                {% elseif item.installed and item.manifest %}
+                    {% if item.update_available %}<form method="post" action="/admin/themes/{{ slug }}/update" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="{{ trans('admin.themes.ajax.updated') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('admin.themes.update') }}</button></form>{% endif %}
+                    {% if not item.active %}<form method="post" action="/admin/themes/{{ slug }}/activate" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="{{ trans('admin.themes.ajax.activated') }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('admin.themes.activate') }}</button></form>{% endif %}
+                {% endif %}
+                </div>
+                {% if item.installed and item.manifest and item.manifest.settings %}
+                <form class="theme-settings" method="post" action="/admin/themes/{{ slug }}/configure" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="{{ trans('admin.themes.ajax.configured') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}">
+                    {% for key, definition in item.manifest.settings %}
+                        {% if definition.type == 'boolean' %}<label class="toggle-row"><input type="checkbox" name="{{ key }}" value="1" {% if item.settings[key] %}checked{% endif %}><span><strong>{{ definition.label|default(key) }}</strong></span></label>
+                        {% elseif definition.type == 'color' %}<label class="field-label">{{ definition.label|default(key) }}<input type="color" name="{{ key }}" value="{{ item.settings[key] }}"></label>
+                        {% else %}<label class="field-label">{{ definition.label|default(key) }}<input name="{{ key }}" value="{{ item.settings[key] }}" maxlength="200"></label>{% endif %}
+                    {% endfor %}
+                    <button class="install-button" type="submit">{{ trans('admin.themes.save_appearance') }}</button>
+                </form>
+                {% endif %}
+                {% if item.installed and not item.active %}
+                <form class="uninstall-form" method="post" action="/admin/themes/{{ slug }}/uninstall" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="{{ trans('admin.themes.ajax.uninstalled') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}"><label>{{ trans('admin.themes.type_slug') }} <code>{{ slug }}</code><input name="confirm_slug" required autocomplete="off"></label><button class="danger-button" type="submit">{{ trans('admin.themes.uninstall') }}</button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% else %}<div class="notice-message">{{ trans('admin.themes.empty') }}</div>{% endfor %}
+    </div>
+</section>
+{% endblock %}

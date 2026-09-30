@@ -1,0 +1,17 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('quotes::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="content-page module-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('common.home'), url: '/'}, {label: trans('quotes::title')}]} only %}
+  {% include 'components/page-header.twig' with {eyebrow: trans('quotes::eyebrow'), title: trans('quotes::title'), description: trans('quotes::description')} only %}
+  {% if quotes %}
+  <div class="content-list">
+    {% for quote in quotes %}
+      <article class="content-card"><blockquote>“{{ quote.quote_text }}”</blockquote>{% if quote.attribution %}<p>— {{ quote.attribution }}</p>{% endif %}</article>
+    {% endfor %}
+  </div>
+  {% else %}
+      {% include 'components/empty-state.twig' with {title: trans('quotes::empty'), message: trans('quotes::empty_help')} only %}
+  {% endif %}
+</section>
+{% endblock %}

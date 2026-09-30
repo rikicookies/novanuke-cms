@@ -1,0 +1,12 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.verification.resend_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-auth-page"><div class="nl-auth-shell nl-auth-shell-compact">
+  <aside class="nl-auth-story nl-auth-story-verify" aria-hidden="true"><div class="nl-login-brandmark">N</div><div class="nl-auth-story-copy"><span class="nl-auth-story-kicker">{{ trans('theme::auth_verify_kicker') }}</span><h1>{{ trans('auth.verification.resend_title') }}</h1><p>{{ trans('theme::auth_verify_story') }}</p></div><div class="nl-auth-story-badges"><span>@</span><span>✓</span><span>→</span></div></aside>
+  <div class="nl-auth-panel"><div class="nl-auth-heading"><span class="nl-login-kicker">{{ trans('auth.verification.eyebrow') }}</span><h2>{{ trans('auth.verification.resend_title') }}</h2><p>{{ trans('auth.verification.resend_help', {site_name: cms_name|default('NovaNuke')}) }}</p></div>
+    {% if sent %}<div class="nl-auth-alert nl-auth-success">{{ trans('auth.verification.resend_sent') }}</div>{% endif %}{% if error %}<div class="nl-auth-alert nl-auth-error">{{ error }}</div>{% endif %}
+    <form class="nl-auth-form" method="post" action="/resend-verification"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><span>{{ trans('common.email') }}</span><input type="email" name="email" value="{{ email }}" maxlength="254" autocomplete="email" required></label><button class="nl-auth-primary" type="submit">{{ trans('auth.verification.resend_submit') }} <span aria-hidden="true">→</span></button></form>
+    <a class="nl-auth-back" href="/login">← {{ trans('common.sign_in') }}</a>
+  </div>
+</div></section>
+{% endblock %}

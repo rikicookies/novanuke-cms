@@ -1,0 +1,5 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.registration_closed.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-auth-status-page"><div class="nl-auth-status-card"><span class="nl-auth-status-symbol">!</span><span class="nl-login-kicker">{{ trans('auth.register.eyebrow') }}</span><h1>{{ trans('auth.registration_closed.title') }}</h1><p>{{ trans('auth.registration_closed.message') }}</p><a class="nl-auth-primary nl-auth-primary-link" href="/login">{{ trans('auth.recovery.back') }}</a></div></section>
+{% endblock %}

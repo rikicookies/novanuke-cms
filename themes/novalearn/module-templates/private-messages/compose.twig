@@ -1,0 +1,26 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('private-messages::compose.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="messages-page nl-comms-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('private-messages::title'), url: '/messages'}, {label: trans('private-messages::compose.title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('private-messages::account'), title: trans('private-messages::compose.title'), description: trans('private-messages::compose.description')} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    <div class="nl-message-app">
+        <aside class="nl-message-sidebar">
+            <a class="nl-compose-cta is-active" href="/messages/compose">+ {{ trans('private-messages::nav.new') }}</a>
+            <nav class="nl-message-folders"><a href="/messages"><span>✉</span>{{ trans('private-messages::nav.inbox') }}</a><a href="/messages/sent"><span>↗</span>{{ trans('private-messages::nav.sent') }}</a><a href="/messages/blocks"><span>⊘</span>{{ trans('private-messages::nav.blocked') }}</a></nav>
+        </aside>
+        <div class="nl-message-panel nl-compose-panel">
+            <div class="nl-message-panel-head"><div><span class="nl-kicker">{{ trans('private-messages::account') }}</span><h2>{{ trans('private-messages::compose.title') }}</h2></div></div>
+            <form class="message-form nl-message-compose" method="post" action="/messages">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <div class="nl-compose-row"><label>{{ trans('private-messages::field.recipient') }}<input name="recipient" required maxlength="32" value="{{ recipient|default('') }}"></label><label>{{ trans('private-messages::field.subject') }}<input name="subject" required minlength="2" maxlength="200" value="{{ subject|default('') }}"></label></div>
+                <label>{{ trans('private-messages::field.format') }}<select name="body_format"><option value="markdown"{% if body_format|default('markdown') == 'markdown' %} selected{% endif %}>{{ trans('private-messages::field.markdown') }}</option><option value="html"{% if body_format|default('markdown') == 'html' %} selected{% endif %}>{{ trans('private-messages::field.html') }}</option></select></label>
+                <label>{{ trans('private-messages::field.message') }}<textarea name="body" required minlength="2" maxlength="5000" rows="10">{{ body|default('') }}</textarea></label>
+                <div class="module-action-row"><button class="module-button-primary" type="submit">{{ trans('private-messages::send') }}</button><a class="module-link-button" href="/messages">{{ trans('private-messages::cancel') }}</a></div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

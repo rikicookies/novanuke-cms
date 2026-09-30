@@ -1,0 +1,1 @@
+{% if items|default([]) %}<div class="block-region block-region-{{ position }}" data-block-position="{{ position }}">{% for item in items %}<aside class="cms-block cms-block-{{ item.slug }}">{% if item.show_title %}<h2>{{ item.title }}</h2>{% endif %}<div class="cms-block-content">{{ item.html }}</div></aside>{% endfor %}</div>{% endif %}

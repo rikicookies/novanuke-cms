@@ -1,0 +1,12 @@
+{% extends "installer/base.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="complete-card">
+    <div class="error-icon">!</div>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <a class="install-button link-button" href="/install">{{ trans('installer.return') }}</a>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('users.directory.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="users-directory">
+    <p class="eyebrow">{{ trans('users.directory.eyebrow') }}</p>
+    <h1>{{ trans('users.directory.title') }}</h1>
+    {% include "auth/_social-nav.twig" %}
+    <p>{{ trans('users.directory.count', {count: result.total}) }}</p>
+    <div class="user-grid">
+        {% for profile in result.items %}
+            <article class="dashboard-card public-profile">
+                {% if profile.avatar_path %}<img class="profile-avatar" src="{{ profile.avatar_path }}" alt="">{% endif %}
+                <h2><a href="/users/{{ profile.username }}">{{ profile.display_name }}</a></h2>
+                <p class="eyebrow">@{{ profile.username }}</p>
+                <small>{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</small>
+            </article>
+        {% else %}
+            <p>{{ trans('users.directory.empty') }}</p>
+        {% endfor %}
+    </div>
+    {% if result.pages > 1 %}<nav class="pagination" aria-label="{{ trans('users.directory.pagination') }}">{% for page in 1..result.pages %}<a class="{{ page == result.page ? 'current' : '' }}" href="/users?page={{ page }}">{{ page }}</a>{% endfor %}</nav>{% endif %}
+</section>
+{% endblock %}

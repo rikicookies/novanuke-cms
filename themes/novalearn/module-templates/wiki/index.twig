@@ -1,0 +1,10 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('wiki::index.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-wiki-directory">
+  {% include 'components/breadcrumbs.twig' with {items: breadcrumbs} only %}
+  <header class="nl-wiki-hero"><div class="nl-wiki-hero-copy"><p class="nl-wiki-kicker">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ namespace ? namespace|replace({':':' / ','-':' '})|title : trans('wiki::index.title') }}</h1><p>{{ trans('wiki::index.description') }}</p></div><nav class="nl-wiki-actions"><a class="nl-wiki-btn" href="/wiki/search">{{ trans('wiki::action.search') }}</a><a class="nl-wiki-btn" href="/wiki/map">{{ trans('wiki::action.map') }}</a><a class="nl-wiki-btn" href="/wiki/recent">{{ trans('wiki::action.recent') }}</a>{% if can_create %}<a class="nl-wiki-btn nl-wiki-btn-primary" href="/admin/wiki/new">{{ trans('wiki::action.create') }}</a>{% endif %}</nav></header>
+  {% if namespaces %}<section class="nl-wiki-section"><div class="nl-wiki-section-title"><h2>{{ trans('wiki::namespace.title') }}</h2></div><div class="nl-wiki-namespace-grid">{% for item in namespaces %}<a class="nl-wiki-namespace" href="/wiki?namespace={{ item.path|url_encode }}"><span class="nl-wiki-folder-icon">▰</span><strong>{{ item.label }}</strong><small>{{ item.path }}</small></a>{% endfor %}</div></section>{% endif %}
+  <section class="nl-wiki-section"><div class="nl-wiki-page-list">{% for page in pages %}<a class="nl-wiki-page-row" href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}"><span><h2>{{ page.title }}</h2><small class="nl-wiki-page-path">{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}{% if page.audience != 'public' %}<span class="nl-wiki-audience">{{ page.audience == 'vip' ? trans('wiki::audience.vip') : trans('wiki::audience.members') }}</span>{% endif %}</small></span><span class="nl-wiki-arrow">→</span></a>{% else %}{% if not namespaces %}<div class="nl-wiki-empty">{{ trans('wiki::index.empty') }} {{ trans('wiki::index.empty_help') }}</div>{% endif %}{% endfor %}</div></section>
+</section>
+{% endblock %}

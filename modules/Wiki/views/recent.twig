@@ -1,0 +1,12 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('wiki::recent.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+{% block content %}
+<section class="wiki-directory wiki-recent">
+    <nav class="content-breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/wiki">{{ trans('wiki::index.title') }}</a></li><li><span aria-current="page">{{ trans('wiki::recent.title') }}</span></li></ol></nav>
+    <header><p class="eyebrow">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ trans('wiki::recent.title') }}</h1><p>{{ trans('wiki::recent.description') }}</p></header>
+    <div class="page-directory-grid">
+        {% for page in pages %}<article><h2><a href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}">{{ page.title }}</a></h2><small>{{ page.updated_at|date(cms_date_format, cms_timezone) }}{% if page.audience != 'public' %} · {{ page.audience == 'vip' ? 'VIP' : 'Members' }}{% endif %}</small></article>{% else %}<p>{{ trans('wiki::recent.empty') }}</p>{% endfor %}
+    </div>
+</section>
+{% endblock %}

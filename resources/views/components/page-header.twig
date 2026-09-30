@@ -1,0 +1,15 @@
+{% set header_actions = actions|default([]) %}
+<header class="content-page-header">
+    <div>
+        {% if eyebrow|default('') %}<p class="eyebrow">{{ eyebrow }}</p>{% endif %}
+        <h1>{{ title }}</h1>
+        {% if description|default('') %}<p class="content-page-description">{{ description }}</p>{% endif %}
+    </div>
+    {% if header_actions %}
+    <nav class="content-header-actions" aria-label="Page actions">
+        {% for action in header_actions %}
+            <a class="content-action" href="{{ action.url }}">{{ action.label }}</a>
+        {% endfor %}
+    </nav>
+    {% endif %}
+</header>

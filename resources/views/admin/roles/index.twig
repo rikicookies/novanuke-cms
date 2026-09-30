@@ -1,0 +1,7 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.roles.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="admin-page nn-admin-workspace">
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.roles.title')}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('admin.roles.eyebrow'), title: trans('admin.roles.title'), description: trans('admin.roles.description')} only %}
+<div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('admin.roles.role') }}</th><th>{{ trans('admin.roles.slug') }}</th><th>{{ trans('admin.roles.permissions') }}</th><th>{{ trans('admin.roles.actions') }}</th></tr></thead><tbody>{% for role in roles %}<tr><td><strong>{{ role.name }}</strong>{% if role.description %}<small>{{ role.description }}</small>{% endif %}</td><td><code>{{ role.slug }}</code></td><td>{{ role.permission_count }}</td><td class="admin-actions-cell">{% include 'components/admin-row-actions.twig' with {label: trans('admin.roles.actions_for', {name: role.name}), actions: [{label: role.slug == 'super-administrator' ? trans('admin.roles.view') : trans('admin.roles.view_edit'), url: '/admin/roles/' ~ role.id}]} only %}</td></tr>{% else %}{% include 'components/admin-table-empty.twig' with {colspan: 4, title: trans('admin.roles.empty'), message: trans('admin.roles.empty_help')} only %}{% endfor %}</tbody></table></div>
+</section>{% endblock %}

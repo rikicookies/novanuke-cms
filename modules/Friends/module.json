@@ -1,0 +1,25 @@
+{
+    "name": "Friends",
+    "slug": "friends",
+    "version": "1.0.0",
+    "api_version": "1.0",
+    "description": "Mutual friend requests and contact blocking.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Friends\\src\\FriendsModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [],
+    "events": [
+        "friend.requested",
+        "friend.accepted"
+    ],
+    "navigation": {
+        "label": "modules.navigation.friends",
+        "url": "/friends",
+        "icon": "users",
+        "order": 120,
+        "audience": "member",
+        "public_landing": true
+    }
+}

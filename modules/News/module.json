@@ -1,0 +1,28 @@
+{
+    "name": "News",
+    "slug": "news",
+    "version": "1.8.1",
+    "api_version": "1.0",
+    "description": "Editorial news, categories, topics and tags for NovaNuke.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\News\\src\\NewsModule",
+    "cms_min_version": "0.4.0-beta.1",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "news.edit",
+        "news.publish"
+    ],
+    "events": [
+        "sitemap.collecting",
+        "media.usage.checking"
+    ],
+    "navigation": {
+        "label": "modules.navigation.news",
+        "url": "/news",
+        "icon": "news",
+        "order": 10,
+        "audience": "public",
+        "public_landing": true
+    }
+}

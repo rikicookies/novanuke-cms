@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ link.title }} — {{ trans('web-links::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<article class="nl-link-detail">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('web-links::title'), url: '/links'}, {label: link.title}]} only %}
+  {% if message %}<div class="success-message">{{ message }}</div>{% endif %}{% if error %}<div class="form-errors"><p>{{ error }}</p></div>{% endif %}
+  <header class="nl-link-detail-header">
+    <div class="nl-link-detail-title"><div class="nl-kicker"><span class="nl-category-pill">{{ link.category_name|default(trans('web-links::detail_fallback'), true) }}</span>{% if link.is_featured %}<span class="nl-badge nl-badge-blue">{{ trans('web-links::featured') }}</span>{% endif %}</div><h1>{{ link.title }}</h1><p>{{ trans('web-links::recorded_visits', {count: link.visit_count}) }}</p></div>
+    {% include 'components/content-actions.twig' with {edit_url: edit_url|default(null), delete_url: delete_url|default(null), csrf_token: content_csrf_token|default(null), return_to: delete_return_to|default(null)} only %}
+  </header>
+
+  <div class="nl-link-detail-hero">
+    <div class="nl-link-detail-media">{% if link.image_path %}<img src="{{ link.image_path }}" alt="">{% else %}<div class="nl-link-art nl-link-art-large"><span>↗</span></div>{% endif %}</div>
+    <aside class="nl-link-summary-card"><div><span class="nl-eyebrow">{{ trans('web-links::detail_fallback') }}</span><h2>{{ link.title }}</h2><p>{{ link.category_name|default(trans('web-links::uncategorized'), true) }}</p></div><a class="nl-link-visit" href="/links/{{ link.slug }}/visit" target="_blank" rel="noopener noreferrer nofollow external"><span>↗</span>{{ trans('web-links::visit_website') }}</a></aside>
+  </div>
+
+  <section class="nl-link-description article-content">{{ link.description_html }}</section>
+  <footer class="nl-link-detail-footer"><details class="nl-link-report"><summary>{{ trans('web-links::report') }}</summary><form method="post" action="/links/{{ link.id }}/report"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="slug" value="{{ link.slug }}"><label>{{ trans('web-links::reason') }}<textarea name="reason" required minlength="5" maxlength="500"></textarea></label><button type="submit">{{ trans('web-links::submit_report') }}</button></form></details><a href="/links">← {{ trans('web-links::title') }}</a></footer>
+</article>
+{% endblock %}

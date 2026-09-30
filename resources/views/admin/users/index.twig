@@ -1,0 +1,57 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.users.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-users-page">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.users.title')}]} only %}
+
+  <div class="nn-page-heading">
+    <div>
+      <span class="nn-eyebrow">{{ trans('admin.users.eyebrow') }}</span>
+      <h1>{{ trans('admin.users.title') }}</h1>
+      <p>{{ trans('admin.users.description') }}</p>
+    </div>
+    {% if can_create_account %}<a class="nn-button nn-button-primary" href="/admin/users/create"><i class="ph-plus"></i>{{ trans('admin.users.create') }}</a>{% endif %}
+  </div>
+
+  {% set active_count = 0 %}{% set suspended_count = 0 %}{% set vip_count = 0 %}
+  {% for item in users %}{% if item.status == 'active' %}{% set active_count = active_count + 1 %}{% endif %}{% if item.status == 'suspended' %}{% set suspended_count = suspended_count + 1 %}{% endif %}{% if item.vip_status == 'active' %}{% set vip_count = vip_count + 1 %}{% endif %}{% endfor %}
+  <div class="nn-users-summary">
+    <div class="nn-users-stat"><span class="nn-soft-icon is-blue"><i class="ph-users-three"></i></span><div><small>{{ trans('admin.users.stats.total') }}</small><strong>{{ users|length }}</strong><span>{{ trans('admin.users.stats.loaded') }}</span></div></div>
+    <div class="nn-users-stat"><span class="nn-soft-icon is-green"><i class="ph-check-circle"></i></span><div><small>{{ trans('admin.users.stats.active') }}</small><strong>{{ active_count }}</strong><span>{{ trans('admin.users.stats.available') }}</span></div></div>
+    <div class="nn-users-stat"><span class="nn-soft-icon is-purple"><i class="ph-crown"></i></span><div><small>{{ trans('admin.users.stats.vip') }}</small><strong>{{ vip_count }}</strong><span>{{ trans('admin.users.stats.vip_help') }}</span></div></div>
+    <div class="nn-users-stat"><span class="nn-soft-icon is-amber"><i class="ph-warning-circle"></i></span><div><small>{{ trans('admin.users.stats.suspended') }}</small><strong>{{ suspended_count }}</strong><span>{{ trans('admin.users.stats.suspended_help') }}</span></div></div>
+  </div>
+
+  <div class="nn-card nn-users-card">
+    <header class="nn-card-header nn-users-toolbar">
+      <div><h2>{{ trans('admin.users.directory') }}</h2><p>{{ trans('admin.users.directory_help') }}</p></div>
+      <nav class="nn-filter-pills" aria-label="{{ trans('admin.users.filter_label') }}">
+        <a href="/admin/users"{% if vip_filter == 'all' %} class="is-active" aria-current="page"{% endif %}>{{ trans('admin.users.filter.all') }}</a>
+        <a href="/admin/users?vip=active"{% if vip_filter == 'active' %} class="is-active" aria-current="page"{% endif %}>{{ trans('admin.users.filter.active') }}</a>
+        <a href="/admin/users?vip=inactive"{% if vip_filter == 'inactive' %} class="is-active" aria-current="page"{% endif %}>{{ trans('admin.users.filter.inactive') }}</a>
+        <a href="/admin/users?vip=none"{% if vip_filter == 'none' %} class="is-active" aria-current="page"{% endif %}>{{ trans('admin.users.filter.none') }}</a>
+      </nav>
+    </header>
+    <div class="nn-users-table-wrap">
+      <table class="nn-users-table">
+        <thead><tr><th>{{ trans('admin.users.user') }}</th><th>{{ trans('admin.users.status') }}</th><th>{{ trans('admin.users.membership') }}</th><th>{{ trans('admin.users.roles') }}</th><th>{{ trans('admin.users.last_login') }}</th><th class="is-actions">{{ trans('admin.users.actions') }}</th></tr></thead>
+        <tbody>
+        {% for item in users %}
+          <tr>
+            <td><div class="nn-user-identity"><span class="nn-user-avatar">{{ item.username|slice(0,1)|upper }}</span><div><strong>{{ item.username }}</strong><small>{{ item.email }}</small></div></div></td>
+            <td><span class="nn-state {{ item.status == 'active' ? 'is-ok' : 'is-warn' }}"><i class="{{ item.status == 'active' ? 'ph-check-circle' : 'ph-pause-circle' }}"></i>{{ trans('admin.users.status.' ~ item.status) }}</span></td>
+            <td>{% if item.vip_status == 'active' %}<div class="nn-user-membership"><span class="nn-state is-info"><i class="ph-crown"></i>{{ trans('admin.memberships.plan.' ~ item.membership_plan|default('vip-custom')) }}</span><small>{% if item.vip_expires_at %}{{ trans('admin.users.expires', {date: item.vip_expires_at}) }}{% if item.vip_expiring_soon %} · {{ trans('admin.users.within_seven_days') }}{% endif %}{% else %}{{ trans('admin.memberships.lifetime_access') }}{% endif %}</small></div>{% elseif item.vip_status == 'inactive' %}<div class="nn-user-membership"><span class="nn-state is-muted">{{ trans('admin.users.filter.inactive') }}</span><small>{{ trans('admin.users.latest_expiration', {date: item.vip_expires_at}) }}</small></div>{% else %}<span class="nn-state is-muted">{{ trans('admin.users.filter.none') }}</span>{% endif %}</td>
+            <td><span class="nn-role-text">{{ item.roles ?: trans('admin.users.no_role') }}</span></td>
+            <td><span class="nn-date-text">{{ item.last_login_at ?: trans('admin.users.never') }}</span></td>
+            <td class="is-actions"><a class="nn-icon-button" href="/admin/users/{{ item.id }}" title="{{ trans('admin.users.manage') }}" aria-label="{{ trans('admin.users.actions_for', {name: item.username}) }}"><i class="ph-pencil-simple"></i></a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6"><div class="nn-users-empty"><i class="ph-users"></i><strong>{{ trans('admin.users.empty') }}</strong><span>{{ trans('admin.users.empty_help') }}</span></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <footer class="nn-users-footer"><span>{{ trans('admin.users.showing', {count: users|length}) }}</span></footer>
+  </div>
+</section>
+{% endblock %}

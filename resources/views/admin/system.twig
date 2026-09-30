@@ -1,0 +1,85 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.system.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-system-page">
+  {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.system.title')}]} only %}
+
+  <div class="nn-page-heading nn-system-heading">
+    <div>
+      <h1>{{ trans('admin.system.title') }}</h1>
+      <p>{{ trans('admin.system.description') }}</p>
+    </div>
+    <a class="nn-button nn-button-secondary" href="/admin/settings"><i class="ph ph-sliders-horizontal"></i>{{ trans('admin.system.open_settings') }}</a>
+  </div>
+
+  {% if system.warnings %}
+    <div class="nn-warning-card nn-system-warning">
+      <span class="nn-warning-icon"><i class="ph ph-warning"></i></span>
+      <div class="nn-warning-copy">
+        <strong>{{ trans('admin.system.review') }}</strong>
+        <ul>{% for warning in system.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+  {% else %}
+    <div class="nn-system-ready"><i class="ph ph-check-circle"></i><div><strong>{{ trans('admin.system.ready_title') }}</strong><span>{{ trans('admin.system.ready') }}</span></div></div>
+  {% endif %}
+
+  <div class="nn-system-summary">
+    <article class="nn-system-summary-card"><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-cube"></i></span><div><small>NovaNuke</small><strong>{{ system.cms_version }}</strong><span>{{ trans('admin.system.core_version') }}</span></div></article>
+    <article class="nn-system-summary-card"><span class="nn-soft-icon nn-soft-purple"><i class="ph ph-code"></i></span><div><small>PHP</small><strong>{{ system.php_version }}</strong><span>{{ trans('admin.system.runtime') }}</span></div></article>
+    <article class="nn-system-summary-card"><span class="nn-soft-icon nn-soft-green"><i class="ph ph-globe"></i></span><div><small>{{ trans('admin.system.environment') }}</small><strong>{{ system.environment|capitalize }}</strong><span>{{ system.debug ? trans('admin.system.debug_on') : trans('admin.system.debug_off') }}</span></div></article>
+    <article class="nn-system-summary-card"><span class="nn-soft-icon nn-soft-amber"><i class="ph ph-puzzle-piece"></i></span><div><small>{{ trans('admin.system.modules') }}</small><strong>{{ system.modules_enabled }} / {{ system.modules_total }}</strong><span>{{ trans('admin.system.modules_enabled') }}</span></div></article>
+  </div>
+
+  <div class="nn-system-grid">
+    <article class="nn-panel nn-system-panel">
+      <header><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-shield-check"></i></span><div><h2>{{ trans('admin.system.security_title') }}</h2><p>{{ trans('admin.system.security_description') }}</p></div></header>
+      <div class="nn-system-checks">
+        <div><span><i class="ph ph-lock-key"></i>{{ trans('admin.system.https_url') }}</span><b class="nn-state {{ system.https_url ? 'is-ok' : 'is-warn' }}">{{ system.https_url ? trans('admin.system.yes') : trans('admin.system.no') }}</b></div>
+        <div><span><i class="ph ph-cookie"></i>{{ trans('admin.system.secure_session') }}</span><b class="nn-state {{ system.secure_session ? 'is-ok' : 'is-warn' }}">{{ system.secure_session ? trans('admin.system.enabled') : trans('admin.system.disabled') }}</b></div>
+        <div><span><i class="ph ph-shield"></i>{{ trans('admin.system.security_headers') }}</span><b class="nn-state {{ system.security_headers ? 'is-ok' : 'is-warn' }}">{{ system.security_headers ? trans('admin.system.enabled') : trans('admin.system.disabled') }}</b></div>
+        <div><span><i class="ph ph-lock"></i>HSTS</span><b class="nn-state {{ system.hsts ? 'is-ok' : 'is-muted' }}">{{ system.hsts ? trans('admin.system.enabled') : trans('admin.system.disabled') }}</b></div>
+      </div>
+    </article>
+
+    <article class="nn-panel nn-system-panel">
+      <header><span class="nn-soft-icon nn-soft-cyan"><i class="ph ph-envelope-simple"></i></span><div><h2>{{ trans('admin.system.mail_title') }}</h2><p>{{ trans('admin.system.mail_description') }}</p></div></header>
+      <div class="nn-system-checks">
+        <div><span><i class="ph ph-paper-plane-tilt"></i>{{ trans('admin.system.mail_transport') }}</span><b class="nn-state is-info">{{ system.mail_transport }}</b></div>
+        <div><span><i class="ph ph-plugs-connected"></i>{{ trans('admin.system.smtp_configuration') }}</span><b class="nn-state {{ system.smtp_configured ? 'is-ok' : 'is-muted' }}">{{ system.smtp_configured ? trans('admin.system.valid') : trans('admin.system.not_active') }}</b></div>
+        <div><span><i class="ph ph-bug"></i>{{ trans('admin.system.debug') }}</span><b class="nn-state {{ system.debug ? 'is-warn' : 'is-ok' }}">{{ system.debug ? trans('admin.system.enabled') : trans('admin.system.disabled') }}</b></div>
+      </div>
+    </article>
+
+    <article class="nn-panel nn-system-panel">
+      <header><span class="nn-soft-icon nn-soft-purple"><i class="ph ph-database"></i></span><div><h2>{{ trans('admin.system.database_migrations') }}</h2><p>{{ trans('admin.system.migrations_description') }}</p></div></header>
+      <div class="nn-system-kpis">
+        <div><strong>{{ system.migrations.pending_total }}</strong><span>{{ trans('admin.system.pending_migrations') }}</span></div>
+        <div><strong>{{ system.migrations.missing_total }}</strong><span>{{ trans('admin.system.missing_migrations') }}</span></div>
+        <div><strong>{{ system.migrations.module_updates_total }}</strong><span>{{ trans('admin.system.module_updates') }}</span></div>
+      </div>
+      <div class="nn-system-core-row"><span>{{ trans('admin.system.core_status') }}</span><b>{{ trans('admin.system.core_migrations', {executed: system.migrations.core.executed, total: system.migrations.core.total}) }}</b></div>
+      {% if system.migrations.core.pending %}<div class="nn-system-note is-warn"><strong>{{ trans('admin.system.pending_core') }}</strong> {{ system.migrations.core.pending|join(', ') }}</div>{% endif %}
+      {% if system.migrations.core.missing_files %}<div class="nn-system-note is-danger"><strong>{{ trans('admin.system.missing_core') }}</strong> {{ system.migrations.core.missing_files|join(', ') }}</div>{% endif %}
+    </article>
+
+    <article class="nn-panel nn-system-panel">
+      <header><span class="nn-soft-icon nn-soft-green"><i class="ph ph-hard-drives"></i></span><div><h2>{{ trans('admin.system.platform_title') }}</h2><p>{{ trans('admin.system.platform_description') }}</p></div></header>
+      <div class="nn-system-columns">
+        <div><h3>{{ trans('admin.system.extensions') }}</h3>{% for name, available in system.extensions %}<div class="nn-mini-check"><span>{{ name }}</span><b class="nn-state {{ available ? 'is-ok' : 'is-danger' }}"><i class="ph {{ available ? 'ph-check' : 'ph-x' }}"></i>{{ available ? trans('admin.system.available') : trans('admin.system.missing') }}</b></div>{% endfor %}</div>
+        <div><h3>{{ trans('admin.system.writable_storage') }}</h3>{% for name, available in system.writable %}<div class="nn-mini-check"><span>{{ name }}</span><b class="nn-state {{ available ? 'is-ok' : 'is-danger' }}"><i class="ph {{ available ? 'ph-check' : 'ph-x' }}"></i>{{ available ? trans('admin.system.writable') : trans('admin.system.not_writable') }}</b></div>{% endfor %}</div>
+      </div>
+    </article>
+  </div>
+
+  <article class="nn-panel nn-system-panel nn-system-audit">
+    <header><span class="nn-soft-icon nn-soft-indigo"><i class="ph ph-user-focus"></i></span><div><h2>{{ trans('admin.system.authorization_audit') }}</h2><p>{{ trans('admin.system.authorization_description') }}</p></div></header>
+    <div class="nn-audit-list">{% for check in system.authorization_audit %}<div><span class="nn-audit-icon {{ check.passed ? 'is-ok' : 'is-danger' }}"><i class="ph {{ check.passed ? 'ph-check' : 'ph-x' }}"></i></span><div><strong>{{ check.label }}</strong><span>{{ check.detail }}</span></div><b class="nn-state {{ check.passed ? 'is-ok' : 'is-danger' }}">{{ check.passed ? trans('admin.system.pass') : trans('admin.system.fail') }}</b></div>{% endfor %}</div>
+  </article>
+
+  <article class="nn-panel nn-system-panel nn-system-modules">
+    <header><span class="nn-soft-icon nn-soft-amber"><i class="ph ph-puzzle-piece"></i></span><div><h2>{{ trans('admin.system.module_migrations_title') }}</h2><p>{{ trans('admin.system.module_migrations_description') }}</p></div></header>
+    <div class="nn-module-migrations">{% for slug, module in system.migrations.modules %}<div><div><strong>{{ module.name }}</strong><span>{{ trans('admin.system.module_migrations', {executed: module.executed, total: module.total}) }}</span></div><div class="nn-module-tags">{% if module.update_available %}<span class="is-warn">{{ trans('admin.system.update_available', {installed: module.installed_version, available: module.available_version}) }}</span>{% endif %}{% if module.pending %}<span class="is-warn">{{ trans('admin.system.pending_list', {items: module.pending|join(', ')}) }}</span>{% endif %}{% if module.missing_files %}<span class="is-danger">{{ trans('admin.system.missing_list', {items: module.missing_files|join(', ')}) }}</span>{% endif %}{% if not module.update_available and not module.pending and not module.missing_files %}<span class="is-ok">{{ trans('admin.system.up_to_date') }}</span>{% endif %}</div></div>{% else %}<div class="nn-empty-inline">{{ trans('admin.system.no_modules') }}</div>{% endfor %}</div>
+  </article>
+</section>
+{% endblock %}

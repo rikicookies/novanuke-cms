@@ -1,0 +1,3 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.deleted.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="nl-auth-status-page"><div class="nl-auth-status-card"><span class="nl-auth-status-symbol">✓</span><span class="nl-login-kicker">{{ trans('account.settings') }}</span><h1>{{ trans('account.deleted.title') }}</h1><p>{{ trans('account.deleted.message') }}</p><a class="nl-auth-primary nl-auth-primary-link" href="/">{{ trans('common.home') }}</a></div></section>{% endblock %}

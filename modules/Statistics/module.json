@@ -1,0 +1,14 @@
+{
+    "name": "Statistics",
+    "slug": "statistics",
+    "version": "1.3.0",
+    "api_version": "1.0",
+    "description": "Privacy-respecting aggregate site statistics and content summaries.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Statistics\\src\\StatisticsModule",
+    "cms_min_version": "0.2.0-alpha.2",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": ["statistics.view-admin", "statistics.manage"],
+    "navigation": {"label": "statistics::navigation.label", "url": "/statistics", "icon": "statistics", "order": 70, "audience": "public", "public_landing": true, "enabled_setting": "statistics.public_enabled"}
+}

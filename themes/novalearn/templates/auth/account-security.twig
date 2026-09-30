@@ -1,0 +1,62 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('account.security.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-account-page nl-security-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: trans('theme::account_center'), url: '/account/profile'}, {label: trans('account.security.title')}]} only %}
+
+    <header class="nl-account-hero nl-security-hero">
+        <div>
+            <span class="nl-kicker">{{ trans('account.settings') }}</span>
+            <h1>{{ trans('account.security.title') }}</h1>
+            <p>{{ trans('account.security.description') }}</p>
+        </div>
+        <a class="nl-btn nl-btn-secondary" href="/account/profile">← {{ trans('account.security.back') }}</a>
+    </header>
+
+    <div class="nl-security-overview">
+        <a class="nl-security-overview-card" href="/account/profile">
+            <span class="nl-section-icon">⌁</span>
+            <span><strong>{{ trans('account.password.title') }}</strong><small>{{ trans('theme::password_intro') }}</small></span><b>→</b>
+        </a>
+        <a class="nl-security-overview-card is-email" href="/account/email">
+            <span class="nl-section-icon">@</span>
+            <span><strong>{{ trans('account.email.link') }}</strong><small>{{ trans('theme::email_intro') }}</small></span><b>→</b>
+        </a>
+    </div>
+
+    <div class="nl-security-grid">
+        <main class="nl-surface nl-security-logins">
+            <div class="nl-section-heading"><span class="nl-section-icon">◷</span><div><h2>{{ trans('account.security.logins') }}</h2><p>{{ trans('theme::security_logins_help') }}</p></div></div>
+            <div class="nl-security-table-wrap">
+                <table class="nl-security-table">
+                    <thead><tr><th>{{ trans('account.security.date') }}</th><th>{{ trans('account.security.device') }}</th><th>{{ trans('account.security.ip') }}</th></tr></thead>
+                    <tbody>
+                    {% for login in logins %}
+                        <tr><td data-label="{{ trans('account.security.date') }}">{{ login.logged_in_at }}</td><td data-label="{{ trans('account.security.device') }}">{{ login.device }}</td><td data-label="{{ trans('account.security.ip') }}"><code>{{ login.ip_address }}</code></td></tr>
+                    {% else %}
+                        <tr><td colspan="3"><div class="nl-security-empty"><span>✓</span>{{ trans('account.security.no_logins') }}</div></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <aside class="nl-surface nl-danger-card">
+            <div class="nl-section-heading compact"><span class="nl-section-icon">!</span><div><h2>{{ trans('account.delete.title') }}</h2><p>{{ trans('theme::delete_account_intro') }}</p></div></div>
+            <div class="nl-danger-warning">{{ trans('account.delete.warning') }}</div>
+            <form method="post" action="/account/delete" class="nl-form nl-danger-form">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <label>{{ trans('account.delete.confirmation', {username: account_user.username}) }}
+                    <input name="confirmation" autocomplete="off" required>
+                    {% if errors.confirmation|default(null) %}<small class="nl-field-error">{{ errors.confirmation }}</small>{% endif %}
+                </label>
+                <label>{{ trans('account.password.current') }}
+                    <input type="password" name="password" autocomplete="current-password" required>
+                    {% if errors.password|default(null) %}<small class="nl-field-error">{{ errors.password }}</small>{% endif %}
+                </label>
+                <button class="nl-danger-button" type="submit">{{ trans('account.delete.submit') }}</button>
+            </form>
+        </aside>
+    </div>
+</section>
+{% endblock %}

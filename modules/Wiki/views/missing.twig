@@ -1,0 +1,12 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('wiki::missing.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">{{ path }}</p>
+    <h1>{{ trans('wiki::missing.title') }}</h1>
+    <p>{{ trans('wiki::missing.description') }}</p>
+    {% if action_url %}<p><a class="content-action" href="{{ action_url }}">{{ trans(draft_exists ? 'wiki::missing.edit_draft' : 'wiki::missing.create') }}</a></p>{% endif %}
+    <p><a href="/wiki">{{ trans('wiki::action.return') }}</a></p>
+</section>
+{% endblock %}

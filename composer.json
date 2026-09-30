@@ -1,0 +1,86 @@
+{
+    "name": "novanuke/novanuke",
+    "description": "A lightweight, modular CMS inspired by the simplicity of PHP-Nuke.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "ext-dom": "*",
+        "ext-fileinfo": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "php": "^8.3",
+        "league/commonmark": "^2.6",
+        "phpmailer/phpmailer": "^6.10",
+        "twig/twig": "^3.10",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "files": [
+            "app/Support/helpers.php"
+        ],
+        "psr-4": {
+            "NovaNuke\\": "app/",
+            "Modules\\": "modules/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "NovaNuke\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "migrate": "php bin/cms migrate",
+        "release-check": "php bin/cms release:check",
+        "test": "phpunit --testsuite Unit",
+        "test:unit": "phpunit --testsuite Unit",
+        "test:integration": "@php tests/run-integration.php",
+        "test:all": [
+            "@test:unit",
+            "@test:integration"
+        ],
+        "serve": "php -S 127.0.0.1:8080 -t public",
+        "test:membership": "@php tests/run-membership-validation.php",
+        "test:checkpoint": [
+            "@php vendor/bin/phpunit --display-warnings --display-skipped",
+            "@php tests/run-integration.php"
+        ],
+        "check:release": [
+            "@php bin/cms release:check",
+            "@php bin/cms release:smoke",
+            "@php bin/cms site:check",
+            "@php bin/cms production:check",
+            "@php bin/cms membership:check",
+            "@php bin/cms payment:check",
+            "@php bin/cms theme:check",
+            "@php bin/cms mail:check",
+            "@php bin/cms rc:deployment"
+        ],
+        "check:install": [
+            "@php bin/cms install:check"
+        ],
+        "check:site": [
+            "@php bin/cms site:check",
+            "@php bin/cms membership:check",
+            "@php bin/cms payment:check",
+            "@php bin/cms mail:check"
+        ],
+        "check:rc-source": [
+            "@php bin/cms rc:check",
+            "@php bin/cms release:check",
+            "@php bin/cms release:smoke",
+            "@php bin/cms theme:check"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": false
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

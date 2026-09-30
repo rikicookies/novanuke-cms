@@ -1,0 +1,15 @@
+<div class="nl-poll-block">
+  <div class="nl-poll-block-head"><span class="nl-poll-block-icon" aria-hidden="true">?</span><div><small>{{ trans('polls::eyebrow') }}</small><strong>{{ poll.question|default(trans('polls::poll')) }}</strong></div></div>
+  {% if poll.accepting|default(false) and not has_voted|default(false) %}
+    <form class="nl-poll-block-form" method="post" action="/polls/{{ poll.id|default(0) }}/vote"><input type="hidden" name="_token" value="{{ csrf_token|default('') }}"><input type="hidden" name="_return" value="{{ return_path|default('/') }}">
+      {% for option in poll.options|default([]) %}<label><input type="{{ poll.allow_multiple|default(false) ? 'checkbox' : 'radio' }}" name="options[]" value="{{ option.id|default(0) }}"><span>{{ option.label|default(trans('polls::option')) }}</span></label>{% endfor %}
+      <button type="submit">{{ trans('polls::vote') }}</button>
+    </form>
+  {% else %}
+    <div class="nl-poll-block-results">
+      <p class="nl-poll-block-thanks">{{ has_voted|default(false) ? trans('polls::thanks_short') : trans('polls::voting_closed') }}</p>
+      {% for option in poll.options|default([]) %}{% set percent = poll.total_votes|default(0) > 0 ? (option.votes / poll.total_votes * 100) : 0 %}<div class="nl-poll-block-result"><div><span>{{ option.label }}</span><b>{{ percent|round }}%</b></div><div class="nl-poll-mini-bar"><span style="width:{{ percent > 100 ? 100 : percent }}%"></span></div></div>{% endfor %}
+    </div>
+  {% endif %}
+  <a class="nl-poll-block-link" href="/polls/{{ poll.id|default(0) }}">{{ trans('polls::view_results_short') }} <span aria-hidden="true">→</span></a>
+</div>

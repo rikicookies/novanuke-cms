@@ -1,0 +1,22 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('wiki::admin.compare.title') }} — {{ page.title }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-wiki-admin">
+    {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('wiki::index.title'), url: '/admin/wiki'}, {label: page.title, url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: trans('wiki::admin.history.title'), url: '/admin/wiki/' ~ page.id ~ '/history'}, {label: trans('wiki::admin.compare.label')}]} only %}
+    {% include 'components/admin-page-heading.twig' with {eyebrow: trans('wiki::admin.compare.eyebrow'), title: page.title, description: trans('wiki::admin.compare.description', {from: from.revision_number, to: to.revision_number})} only %}
+    {% set status_labels = {'draft':trans('wiki::admin.status.draft'),'published':trans('wiki::admin.status.published')} %}{% set audience_labels = {'public':trans('wiki::admin.audience.public'),'member':trans('wiki::admin.audience.member'),'vip':trans('wiki::admin.audience.vip')} %}
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('wiki::admin.compare.field') }}</th><th>#{{ from.revision_number }}</th><th>#{{ to.revision_number }}</th></tr></thead><tbody>
+        <tr><th>{{ trans('wiki::admin.editor.title') }}</th><td>{{ from.title }}</td><td>{{ to.title }}</td></tr>
+        <tr><th>{{ trans('wiki::admin.compare.path') }}</th><td><code>{{ from.namespace ? from.namespace ~ ':' : '' }}{{ from.slug }}</code></td><td><code>{{ to.namespace ? to.namespace ~ ':' : '' }}{{ to.slug }}</code></td></tr>
+        <tr><th>{{ trans('wiki::admin.status') }}</th><td>{{ status_labels[from.status]|default(from.status) }}</td><td>{{ status_labels[to.status]|default(to.status) }}</td></tr>
+        <tr><th>{{ trans('wiki::admin.audience') }}</th><td>{{ audience_labels[from.audience]|default(from.audience) }}</td><td>{{ audience_labels[to.audience]|default(to.audience) }}</td></tr>
+        <tr><th>{{ trans('wiki::admin.compare.comments') }}</th><td>{{ from.comments_enabled|default(0) ? trans('wiki::admin.compare.enabled') : trans('wiki::admin.compare.disabled') }}</td><td>{{ to.comments_enabled|default(0) ? trans('wiki::admin.compare.enabled') : trans('wiki::admin.compare.disabled') }}</td></tr>
+        <tr><th>{{ trans('wiki::admin.history.author') }}</th><td>{{ from.actor }}</td><td>{{ to.actor }}</td></tr>
+        <tr><th>{{ trans('wiki::admin.history.saved') }}</th><td>{{ from.created_at }} UTC</td><td>{{ to.created_at }} UTC</td></tr>
+    </tbody></table></div>
+    <h2>{{ trans('wiki::admin.compare.markdown') }}</h2>
+    <div class="table-wrap"><table class="admin-table wiki-diff"><thead><tr><th>{{ trans('wiki::admin.compare.old') }}</th><th>{{ trans('wiki::admin.compare.new') }}</th></tr></thead><tbody>
+        {% for row in diff %}<tr class="diff-{{ row.kind }}"><td><pre>{% if row.kind == 'removed' %}<del>{{ row.old }}</del>{% else %}{{ row.old ?? '' }}{% endif %}</pre></td><td><pre>{% if row.kind == 'added' %}<ins>{{ row.new }}</ins>{% else %}{{ row.new ?? '' }}{% endif %}</pre></td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

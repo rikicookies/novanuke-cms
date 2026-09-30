@@ -1,0 +1,5 @@
+<div class="nl-statistics-block">
+  <div class="nl-statistics-block-head"><span aria-hidden="true">↗</span><div><small>{{ trans('statistics::public.eyebrow') }}</small><strong>{{ trans('statistics::navigation.label') }}</strong></div></div>
+  <div class="nl-statistics-block-grid"><div><b>{{ summary.registered_users|default(0) }}</b><span>{{ trans('statistics::block.members') }}</span></div><div><b>{{ summary.published_news|default(0) }}</b><span>{{ trans('statistics::block.news') }}</span></div><div><b>{{ summary.approved_comments|default(0) }}</b><span>{{ trans('statistics::block.comments') }}</span></div><div><b>{{ summary.downloads|default(0) }}</b><span>{{ trans('statistics::block.downloads') }}</span></div></div>
+  <a href="/statistics">{{ trans('statistics::public.title') }} <span aria-hidden="true">→</span></a>
+</div>

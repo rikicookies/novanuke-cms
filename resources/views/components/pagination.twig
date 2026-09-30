@@ -1,0 +1,12 @@
+{% set page_count = total_pages|default(1) %}
+{% if page_count > 1 %}
+<nav class="pagination" aria-label="{{ label|default(trans('common.pagination')) }}">
+    {% for page_number in 1..page_count %}
+        <a
+            class="{{ page_number == current_page ? 'current' : '' }}"
+            href="{{ url_template|replace({'{page}': page_number}) }}"
+            {% if page_number == current_page %}aria-current="page"{% endif %}
+        >{{ page_number }}</a>
+    {% endfor %}
+</nav>
+{% endif %}

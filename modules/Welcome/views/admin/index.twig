@@ -1,0 +1,51 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('welcome::admin.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-settings-v2">
+    <div class="nn-breadcrumb"><i class="ph ph-house"></i><span>/</span><a href="/admin">{{ trans('admin.navigation.dashboard') }}</a><span>/</span><strong>{{ trans('welcome::admin.title') }}</strong></div>
+    <div class="nn-page-heading nn-settings-heading">
+        <div><h1>{{ trans('welcome::admin.title') }}</h1><p>{{ trans('welcome::admin.description') }}</p></div>
+    </div>
+    {% if saved %}<div class="nn-settings-alert is-success"><i class="ph ph-check-circle"></i><div><strong>{{ trans('welcome::admin.saved') }}</strong><span>{{ trans('welcome::admin.saved_help') }}</span></div></div>{% endif %}
+    {% if errors %}<div class="nn-settings-alert is-danger"><i class="ph ph-warning-circle"></i><div><strong>{{ trans('welcome::admin.review') }}</strong><span>{{ trans('welcome::admin.review_help') }}</span></div></div>{% endif %}
+    <form method="post" action="/admin/welcome/save" class="nn-settings-layout">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <main class="nn-settings-main">
+            {% for section, fields in sections %}
+            <section class="nn-settings-card">
+                <header><span class="nn-soft-icon nn-soft-blue"><i class="ph ph-pencil-simple"></i></span><div><h2>{{ trans('welcome::admin.section.' ~ section) }}</h2><p>{{ trans('welcome::admin.section_help') }}</p></div></header>
+                <div class="nn-settings-card-body">
+                    {% for field in fields %}
+                    {% set suffix = field.name|replace({'.': '_'}) %}
+                    <div class="nn-settings-field">
+                        <label>{{ trans(field.label) }}</label>
+                        {% if field.shared %}
+                        <input name="{{ 'welcome_' ~ suffix ~ '_url' }}" maxlength="{{ field.max }}" value="{{ values['welcome_' ~ suffix ~ '_url']|default('') }}"><small>{{ trans('welcome::admin.field.link.url_help') }}</small>
+                        {% if errors['welcome_' ~ suffix ~ '_url']|default(null) %}<span class="field-error">{{ trans(errors['welcome_' ~ suffix ~ '_url']) }}</span>{% endif %}
+                        {% else %}
+                        <div class="nn-settings-grid">
+                            <div>
+                                <small>{{ trans('welcome::admin.locale.english') }}</small>
+                                {% if field.textarea %}<textarea name="{{ 'welcome_en_' ~ suffix }}" rows="4" maxlength="{{ field.max }}">{{ values['welcome_en_' ~ suffix]|default('') }}</textarea>{% else %}<input name="{{ 'welcome_en_' ~ suffix }}" maxlength="{{ field.max }}" value="{{ values['welcome_en_' ~ suffix]|default('') }}">{% endif %}
+                                {% if errors['welcome_en_' ~ suffix]|default(null) %}<span class="field-error">{{ trans(errors['welcome_en_' ~ suffix]) }}</span>{% endif %}
+                            </div>
+                            <div>
+                                <small>{{ trans('welcome::admin.locale.spanish') }}</small>
+                                {% if field.textarea %}<textarea name="{{ 'welcome_es_' ~ suffix }}" rows="4" maxlength="{{ field.max }}">{{ values['welcome_es_' ~ suffix]|default('') }}</textarea>{% else %}<input name="{{ 'welcome_es_' ~ suffix }}" maxlength="{{ field.max }}" value="{{ values['welcome_es_' ~ suffix]|default('') }}">{% endif %}
+                                {% if errors['welcome_es_' ~ suffix]|default(null) %}<span class="field-error">{{ trans(errors['welcome_es_' ~ suffix]) }}</span>{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endfor %}
+        </main>
+        <aside class="nn-settings-aside">
+            <section class="nn-settings-note"><i class="ph ph-shield-check"></i><div><strong>{{ trans('welcome::admin.safety_title') }}</strong><p>{{ trans('welcome::admin.safety_help') }}</p></div></section>
+            <div class="nn-settings-actions"><button class="nn-settings-save" type="submit"><i class="ph ph-floppy-disk"></i>{{ trans('welcome::admin.save') }}</button><a href="/admin" class="nn-settings-cancel">{{ trans('welcome::admin.back') }}</a></div>
+        </aside>
+    </form>
+</section>
+{% endblock %}

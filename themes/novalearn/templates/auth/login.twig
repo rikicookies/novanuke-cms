@@ -1,0 +1,53 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.login.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-login-page">
+  <div class="nl-login-shell">
+    <aside class="nl-login-story" aria-hidden="true">
+      <div class="nl-login-brandmark">N</div>
+      <div class="nl-login-story-copy">
+        <span class="nl-login-kicker">{{ trans('theme::login_kicker') }}</span>
+        <h1>{{ trans('theme::login_welcome', {site_name: cms_name|default('NovaNuke')}) }}</h1>
+        <p>{{ trans('theme::login_story') }}</p>
+      </div>
+      <div class="nl-login-orbit">
+        <span>&lt;/&gt;</span><span>#</span><span>{ }</span>
+      </div>
+    </aside>
+
+    <div class="nl-login-panel">
+      <div class="nl-login-mobile-brand">
+        <span class="nl-login-brandmark">N</span>
+        <strong>{{ cms_name|default('NovaNuke') }}</strong>
+      </div>
+      <div class="nl-login-heading">
+        <span class="nl-login-kicker">{{ trans('theme::login_account_kicker') }}</span>
+        <h2>{{ trans('auth.login.heading') }}</h2>
+        <p>{{ trans('auth.login.description', {site_name: cms_name|default('NovaNuke')}) }}</p>
+      </div>
+
+      {% if password_changed %}<div class="nl-auth-alert nl-auth-success">{{ trans('account.password.changed') }}</div>{% endif %}
+      {% if errors %}<div class="nl-auth-alert nl-auth-error"><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+
+      <form class="nl-login-form" method="post" action="/login">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="nl-login-field">
+          <span>{{ trans('auth.login.identifier') }}</span>
+          <div class="nl-login-input"><span class="nl-login-input-icon" aria-hidden="true">@</span><input name="login" value="{{ old_login }}" required autofocus autocomplete="username"></div>
+        </label>
+        <label class="nl-login-field">
+          <span>{{ trans('common.password') }}</span>
+          <div class="nl-login-input"><span class="nl-login-input-icon" aria-hidden="true">●</span><input type="password" name="password" required autocomplete="current-password"></div>
+        </label>
+        <div class="nl-login-between"><a href="/forgot-password">{{ trans('auth.login.forgot') }}</a></div>
+        <button class="nl-login-submit" type="submit"><span>{{ trans('common.sign_in') }}</span><span aria-hidden="true">→</span></button>
+      </form>
+
+      <div class="nl-login-divider"><span>{{ trans('theme::login_new_here') }}</span></div>
+      <a class="nl-login-create" href="/register">{{ trans('common.create_account') }}</a>
+      <a class="nl-login-resend" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>
+      <p class="nl-login-footnote">{{ trans('theme::login_footnote') }}</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.logs.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}<section class="admin-page nn-admin-workspace">
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('admin.logs.title')}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('admin.logs.eyebrow'), title: trans('admin.logs.title'), description: trans('admin.logs.description')} only %}
+<div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ trans('admin.logs.date') }}</th><th>{{ trans('admin.logs.actor') }}</th><th>{{ trans('admin.logs.action') }}</th><th>{{ trans('admin.logs.subject') }}</th><th>{{ trans('admin.logs.context') }}</th></tr></thead>
+<tbody>{% for log in logs %}<tr><td>{{ log.created_at }}</td><td>{{ log.actor_username ?: trans('admin.logs.system') }}</td><td><code>{{ log.action }}</code></td><td>{{ log.subject_type }}{% if log.subject_id %} #{{ log.subject_id }}{% endif %}</td><td><small>{{ log.context ?: '—' }}</small></td></tr>{% else %}<tr><td colspan="5">{{ trans('admin.logs.empty') }}</td></tr>{% endfor %}</tbody></table></div>
+</section>{% endblock %}

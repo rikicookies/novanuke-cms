@@ -1,0 +1,38 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('quotes::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nl-quotes-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: trans('quotes::title')}]} only %}
+
+  <header class="nl-quotes-hero">
+    <div class="nl-quotes-hero-copy">
+      <span class="nl-quotes-kicker">{{ trans('quotes::eyebrow') }}</span>
+      <h1>{{ trans('quotes::title') }}</h1>
+      <p>{{ trans('quotes::description') }}</p>
+    </div>
+    <div class="nl-quotes-hero-mark" aria-hidden="true">“</div>
+  </header>
+
+  {% if quotes %}
+    <div class="nl-quotes-grid">
+      {% for quote in quotes %}
+        <article class="nl-quote-card">
+          <span class="nl-quote-mark" aria-hidden="true">“</span>
+          <blockquote>{{ quote.quote_text }}</blockquote>
+          {% if quote.attribution %}
+            <footer>
+              <span class="nl-quote-author-mark" aria-hidden="true">—</span>
+              <strong>{{ quote.attribution }}</strong>
+            </footer>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="nl-quotes-empty">
+      <span class="nl-quotes-empty-mark" aria-hidden="true">“</span>
+      {% include 'components/empty-state.twig' with {title: trans('quotes::empty'), message: trans('quotes::empty_help')} only %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

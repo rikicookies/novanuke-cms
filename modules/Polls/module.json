@@ -1,0 +1,23 @@
+{
+    "name": "Polls",
+    "slug": "polls",
+    "version": "1.2.0",
+    "api_version": "1.0",
+    "description": "Scheduled single or multiple-choice polls with results and an active-poll block.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\Polls\\src\\PollsModule",
+    "cms_min_version": "0.2.0-alpha.2",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": [
+        "polls.manage"
+    ],
+    "navigation": {
+        "label": "modules.navigation.polls",
+        "url": "/polls",
+        "icon": "polls",
+        "order": 65,
+        "audience": "public",
+        "public_landing": true
+    }
+}

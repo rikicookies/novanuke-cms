@@ -1,0 +1,11 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('wiki::admin.preview.title', {title: page.title}) }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="admin-page nn-admin-workspace nn-wiki-admin"><div class="nn-wiki-preview content-page wiki-preview">
+    <div class="notice-message">{{ trans('wiki::admin.preview.notice') }}</div>
+    <p class="eyebrow">Wiki · {{ page.path }}</p>
+    <h1>{{ page.title }}</h1>
+    <article class="prose-content">{{ page.content_html }}</article>
+    <p><small>{{ trans('wiki::admin.preview.help') }}</small></p>
+</div></section>
+{% endblock %}

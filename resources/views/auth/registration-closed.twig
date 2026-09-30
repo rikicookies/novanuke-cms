@@ -1,0 +1,10 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('auth.registration_closed.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">{{ trans('auth.register.eyebrow') }}</p>
+    <h1>{{ trans('auth.registration_closed.title') }}</h1>
+    <p>{{ trans('auth.registration_closed.message') }}</p>
+    <a class="install-button link-button" href="/login">{{ trans('auth.recovery.back') }}</a>
+</section>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "@admin-core/layouts/admin.twig" %}
+{% block title %}{{ trans('admin.dashboard.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<div class="nn-breadcrumb"><i class="ph-house"></i><span>/</span><span>{{ trans('admin.dashboard.title') }}</span></div>
+
+<section class="nn-page-heading nn-dashboard-heading">
+    <div><h1>{{ trans('admin.dashboard.hello', {username: user.username}) }}</h1><p>{{ trans('admin.dashboard.version_overview', {version: cms_version}) }}</p></div>
+    <div class="nn-date-card"><span class="nn-soft-icon nn-soft-blue"><i class="ph-calendar-blank"></i></span><div><strong>{{ "now"|date(cms_date_format, cms_timezone) }}</strong><small>NovaNuke {{ cms_version }}</small></div></div>
+</section>
+
+{% if system_warnings %}
+<section class="nn-warning-card">
+    <span class="nn-warning-icon"><i class="ph-warning"></i></span>
+    <div class="nn-warning-copy"><strong>{{ trans('admin.dashboard.configuration_warnings') }}</strong><ul>{% for warning in system_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>
+    <a href="/admin/system" class="nn-button nn-button-secondary">{{ trans('admin.dashboard.review_system') }}</a>
+</section>
+{% endif %}
+
+{% if dashboard.attention %}
+<section class="nn-attention-strip">
+    <div><strong>{{ trans('admin.dashboard.needs_attention') }}</strong><span>{{ trans('admin.dashboard.priority_queue') }}</span></div>
+    <div class="nn-attention-items">{% for item in dashboard.attention %}<a href="{{ item.url }}"><span>{{ trans(item.label) }}</span><b>{{ item.count }}</b></a>{% endfor %}</div>
+</section>
+{% endif %}
+
+<div class="nn-metrics-grid">
+    {% set tones = ['blue','green','purple','orange','pink','cyan','indigo','amber'] %}
+    {% set icons = ['ph-user','ph-user-check','ph-crown','ph-star','ph-calendar-check','ph-newspaper','ph-file-text','ph-download-simple','ph-chats-circle'] %}
+    {% for card in dashboard.cards %}
+        <a href="{{ card.url }}" class="nn-metric">
+            <span class="nn-soft-icon nn-soft-{{ tones[loop.index0 % tones|length] }}"><i class="{{ icons[loop.index0 % icons|length] }}"></i></span>
+            <div><strong>{{ card.value }}</strong><span>{{ trans(card.label) }}</span><small>{{ trans('admin.ui.manage') }} <i class="ph-arrow-right"></i></small></div>
+        </a>
+    {% endfor %}
+    {% if dashboard.module_status %}
+        <a href="/admin/modules" class="nn-metric"><span class="nn-soft-icon nn-soft-slate"><i class="ph-puzzle-piece"></i></span><div><strong>{{ dashboard.module_status.enabled }} / {{ dashboard.module_status.detected }}</strong><span>{{ trans('admin.dashboard.enabled_modules') }}</span><small>{{ dashboard.module_status.issues ? trans('admin.dashboard.issue_count', {count: dashboard.module_status.issues}) : trans('admin.ui.review') }} <i class="ph-arrow-right"></i></small></div></a>
+    {% endif %}
+</div>
+
+<div class="nn-dashboard-middle">
+    {% if dashboard.quick_actions %}
+    <section class="nn-panel nn-quick-panel">
+        <header><span class="nn-soft-icon nn-soft-blue"><i class="ph-lightning"></i></span><div><h2>{{ trans('admin.dashboard.quick_actions') }}</h2><p>{{ trans('admin.dashboard.quick_actions_help') }}</p></div></header>
+        <div class="nn-quick-grid">
+            {% for action in dashboard.quick_actions %}
+                {% set actionIcon = 'ph-arrow-right' %}
+                {% if 'news' in action.url %}{% set actionIcon = 'ph-newspaper' %}{% elseif 'pages' in action.url %}{% set actionIcon = 'ph-file-text' %}{% elseif 'downloads' in action.url %}{% set actionIcon = 'ph-download-simple' %}{% elseif 'web-links' in action.url %}{% set actionIcon = 'ph-link' %}{% elseif 'users' in action.url %}{% set actionIcon = 'ph-user-plus' %}{% elseif 'memberships' in action.url %}{% set actionIcon = 'ph-crown' %}{% endif %}
+                <a href="{{ action.url }}"><span class="nn-soft-icon nn-soft-{{ tones[loop.index0 % tones|length] }}"><i class="{{ actionIcon }}"></i></span><strong>{{ trans(action.label) }}</strong></a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if system_health %}
+    <section class="nn-panel nn-health-panel">
+        <header><span class="nn-soft-icon nn-soft-slate"><i class="ph-database"></i></span><div><h2><span class="nn-health-dot {{ system_health.status == 'healthy' ? 'healthy' : 'warning' }}"></span>{{ trans('admin.dashboard.site_health') }}</h2><p>{{ system_health.status == 'healthy' ? trans('admin.dashboard.all_healthy') : trans('admin.dashboard.review_recommended') }}</p></div></header>
+        <div class="nn-health-list">{% for check in system_health.checks %}<a href="{{ check.url }}"><span>{{ trans(check.label) }}</span><strong class="{{ check.status == 'healthy' ? 'ok' : 'warn' }}"><i class="{{ check.status == 'healthy' ? 'ph-check-circle' : 'ph-warning-circle' }}"></i>{% set valueParts = check.value|split('|') %}{{ trans(valueParts[0], valueParts[1] is defined ? {count: valueParts[1]} : {}) }}</strong></a>{% endfor %}</div>
+    </section>
+    {% endif %}
+</div>
+
+<div class="nn-dashboard-bottom">
+    {% if dashboard.recent_content %}
+    <section class="nn-panel nn-recent-panel"><header><span class="nn-soft-icon nn-soft-blue"><i class="ph-newspaper"></i></span><h2>{{ trans('admin.dashboard.recent_content') }}</h2></header><div class="nn-simple-list">{% for item in dashboard.recent_content|slice(0,4) %}<a href="{{ item.admin_url }}"><span class="nn-list-icon"><i class="ph-file-text"></i></span><span class="nn-list-copy"><strong>{{ item.title }}</strong><small>{{ trans(item.type) }} · {{ item.created_at|date(cms_date_format, cms_timezone) }}</small></span><span class="nn-status-pill">{{ trans('admin.dashboard.status.' ~ item.status) }}</span></a>{% endfor %}</div></section>
+    {% endif %}
+    {% if dashboard.recent_users %}
+    <section class="nn-panel nn-recent-panel"><header><span class="nn-soft-icon nn-soft-blue"><i class="ph-users"></i></span><h2>{{ trans('admin.dashboard.recent_users') }}</h2></header><div class="nn-simple-list">{% for account in dashboard.recent_users %}<a href="/admin/users/{{ account.id }}"><span class="nn-user-circle">{{ account.username|slice(0,1)|upper }}</span><span class="nn-list-copy"><strong>{{ account.username }}</strong><small>{{ account.created_at|date(cms_date_format, cms_timezone) }}</small></span><span class="nn-status-pill">{{ trans('admin.dashboard.status.' ~ account.status) }}</span></a>{% endfor %}</div></section>
+    {% endif %}
+    {% if dashboard.recent_activity %}
+    <section class="nn-panel nn-recent-panel"><header><span class="nn-soft-icon nn-soft-blue"><i class="ph-pulse"></i></span><h2>{{ trans('admin.dashboard.recent_activity') }}</h2><a href="/admin/logs" class="nn-view-all">{{ trans('admin.dashboard.view_logs') }} <i class="ph-arrow-right"></i></a></header><div class="nn-activity-list">{% for event in dashboard.recent_activity|slice(0,5) %}<div><span class="nn-activity-dot"><i class="ph-check"></i></span><span><strong>{{ event.actor_username|default(trans('admin.dashboard.system')) }}</strong> {{ event.action }}<small>{{ event.created_at|date(cms_date_format, cms_timezone) }}</small></span></div>{% endfor %}</div></section>
+    {% endif %}
+</div>
+{% endblock %}

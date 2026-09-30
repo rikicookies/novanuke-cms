@@ -1,0 +1,17 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ content.hero.title }} &mdash; {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="welcome-card module-page welcome-home">
+    <header class="welcome-hero"><p class="eyebrow">{{ content.hero.eyebrow }}</p><h1>{{ content.hero.title }}</h1><p class="welcome-deck">{{ content.hero.description }}</p>{% if links %}<div class="module-action-row">{% for link in links|slice(0, 2) %}<a class="{{ loop.first ? 'module-button module-button-primary' : 'module-link-button' }}" href="{{ link.url }}">{{ link.label }}</a>{% endfor %}</div>{% endif %}</header>
+    <div class="welcome-story"><p>{{ content.story.modern }}</p><p>{{ content.story.roots }}</p><p>{{ content.story.spirit }}</p></div>
+    <div class="welcome-feature-grid">
+      <article><span class="welcome-feature-number">01</span><h2>{{ content.feature.core.title }}</h2><p>{{ content.feature.core.text }}</p></article>
+      <article><span class="welcome-feature-number">02</span><h2>{{ content.feature.web.title }}</h2><p>{{ content.feature.web.text }}</p></article>
+      <article><span class="welcome-feature-number">03</span><h2>{{ content.feature.pieces.title }}</h2><p>{{ content.feature.pieces.text }}</p></article>
+    </div>
+    <section class="welcome-capabilities"><div><p class="eyebrow">{{ content.capabilities.eyebrow }}</p><h2>{{ content.capabilities.title }}</h2><p>{{ content.capabilities.description }}</p></div><ul>{% for key in ['news','downloads','wiki','users','audiences','extensions','search','operations'] %}<li>{{ content.capabilities[key] }}</li>{% endfor %}</ul></section>
+    <section class="welcome-status"><p class="eyebrow">{{ content.status.eyebrow }}</p><h2>{{ content.status.title }}</h2><p>{{ content.status.text }}</p></section>
+    {% if links %}<section class="welcome-find"><div><p class="eyebrow">{{ content.explore.eyebrow }}</p><h2>{{ content.explore.title }}</h2><p>{{ content.explore.description }}</p></div><div class="welcome-link-grid">{% for link in links %}<a href="{{ link.url }}"><strong>{{ link.label }}</strong><span>{{ link.help }} &rarr;</span></a>{% endfor %}</div></section>{% endif %}
+    <footer class="welcome-closing"><p>{{ content.closing.lead }}</p><h2>{{ content.closing.title }}</h2><p>{{ content.closing.welcome }}</p></footer>
+</section>
+{% endblock %}

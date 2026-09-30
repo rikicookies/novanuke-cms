@@ -1,0 +1,64 @@
+{% extends "layouts/admin.twig" %}
+{% block title %}{{ trans('admin.blocks.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+
+{% macro audience_label(value) %}{% if value == 'guest' %}{{ trans('admin.blocks.audience.guests') }}{% elseif value == 'member' %}{{ trans('admin.blocks.audience.members') }}{% elseif value == 'vip' %}{{ trans('admin.blocks.audience.vip') }}{% else %}{{ trans('admin.blocks.audience.everyone') }}{% endif %}{% endmacro %}
+{% macro editor(block, positions, roles, is_new) %}
+<input type="hidden" name="id" value="{{ block.id|default('') }}">
+<div class="nn-editor-section">
+  <div class="nn-editor-section-title"><span>01</span><div><h3>{{ trans('admin.blocks.field.title') }}</h3><p>{{ trans('admin.blocks.description') }}</p></div></div>
+  <div class="nn-field-grid nn-field-grid-2">
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.title') }}</span><input name="title" required maxlength="150" value="{{ block.title|default('') }}"></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.slug') }}</span><input name="slug" required maxlength="100" pattern="[a-z][a-z0-9-]*" value="{{ block.slug|default('') }}"></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.position') }}</span><select name="position">{% for position in positions %}<option value="{{ position }}" {{ block.position|default('before-content') == position ? 'selected' : '' }}>{{ position }}</option>{% endfor %}</select></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.order') }}</span><input type="number" name="sort_order" min="-10000" max="10000" value="{{ block.sort_order|default(0) }}"></label>
+  </div>
+</div>
+{% set content_format = block.type|default('html') %}
+<div class="nn-editor-section">
+  <div class="nn-editor-section-title"><span>02</span><div><h3>{{ trans('admin.blocks.field.html_content') }}</h3><p>{{ trans('admin.blocks.field.content_help') }}</p></div></div>
+  {% if content_format in ['html','markdown'] %}
+  <label class="nn-field nn-field-small"><span>{{ trans('admin.blocks.field.content_format') }}</span><select name="content_format"><option value="html" {{ content_format == 'html' ? 'selected' : '' }}>{{ trans('admin.blocks.field.html') }}</option><option value="markdown" {{ content_format == 'markdown' ? 'selected' : '' }}>{{ trans('admin.blocks.field.markdown') }}</option></select></label>
+  <label class="nn-field"><textarea name="content" rows="8" maxlength="100000">{{ block.content|default('') }}</textarea></label>
+  {% else %}<div class="nn-inline-notice">{{ trans('admin.blocks.dynamic_help', {type: block.type}) }}</div>{% endif %}
+</div>
+<div class="nn-editor-section">
+  <div class="nn-editor-section-title"><span>03</span><div><h3>{{ trans('admin.blocks.field.visibility') }}</h3><p>{{ trans('admin.blocks.field.roles_help') }}</p></div></div>
+  <div class="nn-field-grid nn-field-grid-2">
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.audience') }}</span><select name="audience"><option value="public" {{ block.audience|default('public') == 'public' ? 'selected' : '' }}>{{ trans('admin.blocks.audience.everyone') }}</option><option value="guest" {{ block.audience|default('public') == 'guest' ? 'selected' : '' }}>{{ trans('admin.blocks.audience.guests') }}</option><option value="member" {{ block.audience|default('public') == 'member' ? 'selected' : '' }}>{{ trans('admin.blocks.audience.members') }}</option><option value="vip" {{ block.audience|default('public') == 'vip' ? 'selected' : '' }}>{{ trans('admin.blocks.audience.vip') }}</option></select></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.visibility') }}</span><select name="visibility_mode"><option value="all" {{ block.visibility_mode|default('all') == 'all' ? 'selected' : '' }}>{{ trans('admin.blocks.visibility.all') }}</option><option value="only" {{ block.visibility_mode|default('all') == 'only' ? 'selected' : '' }}>{{ trans('admin.blocks.visibility.only') }}</option><option value="except" {{ block.visibility_mode|default('all') == 'except' ? 'selected' : '' }}>{{ trans('admin.blocks.visibility.except') }}</option></select></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.page_patterns') }}</span><textarea name="page_patterns" rows="4" placeholder="/news/*&#10;/welcome">{{ block.page_patterns|default([])|join('\n') }}</textarea></label>
+    <label class="nn-field"><span>{{ trans('admin.blocks.field.module_slugs') }}</span><textarea name="module_slugs" rows="4" placeholder="news&#10;welcome">{{ block.module_slugs|default([])|join('\n') }}</textarea></label>
+  </div>
+  <div class="nn-role-grid">{% for role in roles %}<label><input type="checkbox" name="role_ids[]" value="{{ role.id }}" {{ role.id in (block.role_ids|default([])) ? 'checked' : '' }}><span>{{ role.name }}</span></label>{% endfor %}</div>
+</div>
+<div class="nn-editor-section">
+  <div class="nn-editor-section-title"><span>04</span><div><h3>{{ trans('admin.blocks.field.starts_at') }}</h3></div></div>
+  <div class="nn-field-grid nn-field-grid-2"><label class="nn-field"><span>{{ trans('admin.blocks.field.starts_at') }}</span><input type="datetime-local" name="starts_at" value="{{ block.starts_at|default('', true)|replace({' ': 'T'}) }}"></label><label class="nn-field"><span>{{ trans('admin.blocks.field.ends_at') }}</span><input type="datetime-local" name="ends_at" value="{{ block.ends_at|default('', true)|replace({' ': 'T'}) }}"></label></div>
+  <div class="nn-toggle-row"><label><input type="checkbox" name="enabled" value="1" {{ block.enabled|default(1) ? 'checked' : '' }}><span>{{ trans('admin.blocks.field.enabled') }}</span></label><label><input type="checkbox" name="show_title" value="1" {{ block.show_title|default(1) ? 'checked' : '' }}><span>{{ trans('admin.blocks.field.show_title') }}</span></label></div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<section class="admin-page nn-blocks-v4">
+{% include 'components/admin-breadcrumb.twig' with {items:[{label:trans('admin.title'),url:'/admin'},{label:trans('admin.blocks.title')}]} only %}
+<div class="nn-page-command"><div>{% include 'components/admin-page-heading.twig' with {eyebrow:trans('admin.blocks.eyebrow'),title:trans('admin.blocks.title'),description:trans('admin.blocks.description')} only %}</div><button type="button" class="nn-primary-action" data-block-create-toggle><span>＋</span>{{ trans('admin.blocks.create') }}</button></div>
+{% if message %}<div class="success-message">{{ message }}</div>{% endif %}{% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+<div class="nn-metric-strip"><div><span>{{ trans('admin.blocks.configured') }}</span><strong>{{ block_list|length }}</strong></div><div><span>{{ trans('admin.blocks.enabled') }}</span><strong>{{ block_list|filter(b => b.enabled)|length }}</strong></div><div><span>{{ trans('admin.blocks.disabled') }}</span><strong>{{ block_list|filter(b => not b.enabled)|length }}</strong></div></div>
+
+<section class="nn-create-drawer" data-block-create-panel hidden>
+ <div class="nn-create-drawer-head"><div><span class="nn-kicker">{{ trans('admin.blocks.create') }}</span><h2>{{ trans('admin.blocks.create') }}</h2></div><button type="button" class="nn-icon-button" data-block-create-close aria-label="Close">×</button></div>
+ <form method="post" action="/admin/blocks/save"><input type="hidden" name="_token" value="{{ csrf_token }}">{{ _self.editor({},positions,roles,true) }}<div class="nn-sticky-actions"><button type="button" class="nn-secondary-action" data-block-create-close>{{ trans('settings.back') }}</button><button type="submit" class="nn-primary-action">{{ trans('admin.blocks.create') }}</button></div></form>
+</section>
+
+<div class="nn-block-catalog">
+{% for block in block_list %}
+<article class="nn-block-row {{ block.enabled ? '' : 'is-muted' }}">
+ <div class="nn-block-row-main"><div class="nn-block-avatar">{{ block.title|slice(0,1)|upper }}</div><div class="nn-block-name"><h3>{{ block.title }}</h3><code>{{ block.slug }}</code></div></div>
+ <div class="nn-block-facts"><div><span>{{ trans('admin.blocks.field.position') }}</span><strong>{{ block.position }}</strong></div><div><span>{{ trans('admin.blocks.field.audience') }}</span><strong>{{ _self.audience_label(block.audience|default('public')) }}</strong></div><div><span>{{ trans('admin.blocks.field.visibility') }}</span><strong>{{ trans('admin.blocks.visibility.' ~ block.visibility_mode|default('all')) }}</strong></div><div><span>{{ trans('admin.blocks.field.order') }}</span><strong>{{ block.sort_order|default(0) }}</strong></div></div>
+ <div class="nn-block-row-actions"><span class="nn-status-pill {{ block.enabled ? 'is-on' : 'is-off' }}">{{ block.enabled ? trans('admin.blocks.enabled') : trans('admin.blocks.disabled') }}</span><details class="nn-block-edit"><summary>{{ trans('admin.blocks.save_changes') }}</summary><div class="nn-block-edit-panel"><form method="post" action="/admin/blocks/save"><input type="hidden" name="_token" value="{{ csrf_token }}">{{ _self.editor(block,positions,roles,false) }}<div class="nn-sticky-actions"><button type="submit" class="nn-primary-action">{{ trans('admin.blocks.save_changes') }}</button></div></form><div class="nn-danger-zone"><form method="post" action="/admin/blocks/{{ block.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><input type="checkbox" name="confirm_delete" value="1" required> {{ trans('admin.blocks.confirm_delete') }}</label><button class="danger-button" type="submit">{{ trans('admin.blocks.delete') }}</button></form></div></div></details></div>
+</article>
+{% else %}<div class="nn-empty-card"><p>{{ trans('admin.blocks.empty') }}</p></div>{% endfor %}
+</div>
+</section>
+<script src="/assets/admin/limitless/js/blocks-admin-v2.js?v=18" defer></script>
+{% endblock %}
