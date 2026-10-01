@@ -20,7 +20,7 @@ modules/ReadingList/
   language/en.json
   language/es.json
   database/migrations/
-  tests/
+  Tests/
   README.md
 ```
 

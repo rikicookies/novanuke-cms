@@ -28,7 +28,7 @@ final class ModuleScaffolder
             throw new RuntimeException("Module already exists: {$class}");
         }
 
-        $directories = ['src', 'views', 'language', 'database/migrations', 'tests'];
+        $directories = ['src', 'views', 'language', 'database/migrations', 'Tests'];
         foreach ($directories as $directory) {
             if (! mkdir($path . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $directory), 0775, true)
                 && ! is_dir($path . DIRECTORY_SEPARATOR . $directory)) {

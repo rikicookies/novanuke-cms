@@ -20,7 +20,7 @@ Do not uninstall the module when preserving existing pages, revisions, comments,
 ## Verification
 
 ```shell
-php vendor/bin/phpunit modules/Wiki/tests/WikiPackageTest.php
+php vendor/bin/phpunit modules/Wiki/Tests/WikiPackageTest.php
 php bin/cms module:check Wiki
 php bin/cms module:inspect Wiki
 ```

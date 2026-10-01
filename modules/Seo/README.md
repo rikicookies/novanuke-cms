@@ -19,7 +19,7 @@ Disabling or removing the module directory only removes its two public endpoints
 ## Verification
 
 ```shell
-php vendor/bin/phpunit modules/Seo/tests/SeoPackageTest.php
+php vendor/bin/phpunit modules/Seo/Tests/SeoPackageTest.php
 php bin/cms module:check Seo
 php bin/cms module:inspect Seo
 ```

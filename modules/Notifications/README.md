@@ -19,7 +19,7 @@ Upload the ZIP through **Admin → Modules → Install module package**, then in
 ## Verification
 
 ```shell
-php vendor/bin/phpunit modules/Notifications/tests/NotificationsPackageTest.php
+php vendor/bin/phpunit modules/Notifications/Tests/NotificationsPackageTest.php
 php bin/cms module:check Notifications
 php bin/cms module:inspect Notifications
 ```

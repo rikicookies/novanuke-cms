@@ -19,7 +19,7 @@ When updating an existing site, do not uninstall with data deletion. Database re
 ## Verification
 
 ```shell
-php vendor/bin/phpunit modules/Media/tests/MediaPackageTest.php
+php vendor/bin/phpunit modules/Media/Tests/MediaPackageTest.php
 php bin/cms module:check Media
 php bin/cms module:inspect Media
 ```

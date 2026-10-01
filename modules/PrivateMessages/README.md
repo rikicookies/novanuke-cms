@@ -20,7 +20,7 @@ Do not uninstall with data deletion when preserving conversations, blocks or rep
 ## Verification
 
 ```shell
-php vendor/bin/phpunit modules/PrivateMessages/tests/PrivateMessagesPackageTest.php
+php vendor/bin/phpunit modules/PrivateMessages/Tests/PrivateMessagesPackageTest.php
 php bin/cms module:check PrivateMessages
 php bin/cms module:inspect PrivateMessages
 ```
