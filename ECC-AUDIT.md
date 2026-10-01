@@ -1,5 +1,18 @@
 # ECC Audit Report: NovaNuke
 
+## Filesystem permissions and shared-hosting compatibility — RESOLVED + VERIFIED
+
+Beta 1 deployment verification found that Windows-created release ZIP entries could
+extract source directories without Unix traverse bits, and that public media/theme
+outputs used private modes unsuitable for a separate static web server. NovaNuke now
+encodes release ZIP directories as `0755` and files as `0644`, provisions public
+uploads/assets as `0755` with `0644` files, and keeps runtime/private data at `0700`
+directories and `0600` files. Upload validation and Apache executable-upload guards
+remain intact. Automated verification covers ZIP external attributes, exclusions,
+installer provisioning, `.env` `0600` handling, unit tests, the fresh-install
+integration test, and release/theme gates. A fresh Bluehost extraction and upload
+retest remains required for real-host acceptance.
+
 Audit scope was read-only. No files, dependencies, Git state, or database state were changed.
 
 ## A. Executive Summary

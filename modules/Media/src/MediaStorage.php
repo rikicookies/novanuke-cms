@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Media\src;
 
 use NovaNuke\Core\Storage\SafeStorageBoundary;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RuntimeException;
 
 final class MediaStorage
@@ -16,12 +17,17 @@ final class MediaStorage
     public function store(ValidatedMedia $media): string
     {
         $relative='uploads/media/'.gmdate('Y').'/'.gmdate('m');$directory=$this->publicRoot.'/'.$relative;
-        try { SafeStorageBoundary::ensureDirectory($directory, 0750); }
+        try {
+            foreach ([$this->publicRoot . '/uploads', $this->publicRoot . '/uploads/media', $this->publicRoot . '/' . $relative] as $path) {
+                SafeStorageBoundary::ensureDirectory($path, FilesystemPermissions::PUBLIC_DIRECTORY);
+            }
+        }
         catch (RuntimeException) { throw new RuntimeException('Media storage is unavailable.'); }
         if (!is_uploaded_file($media->temporaryPath)) throw new RuntimeException('Media storage is unavailable.');
         $filename=bin2hex(random_bytes(20)).'.'.$media->extension;$path=$directory.'/'.$filename;
         if (!move_uploaded_file($media->temporaryPath,$path)) throw new RuntimeException('Image could not be stored.');
-        chmod($path,0640);return '/'.$relative.'/'.$filename;
+        FilesystemPermissions::setFileMode($path, FilesystemPermissions::PUBLIC_FILE);
+        return '/'.$relative.'/'.$filename;
     }
 
     public function remove(string $publicPath): void

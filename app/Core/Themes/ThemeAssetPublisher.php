@@ -6,6 +6,7 @@ namespace NovaNuke\Core\Themes;
 
 use Closure;
 use FilesystemIterator;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
@@ -34,9 +35,8 @@ final class ThemeAssetPublisher
         $destination = $this->destination($manifest->slug);
         $plan = $this->buildValidatedPlan($manifest);
         $parent = dirname($destination);
-        if (! is_dir($parent) && ! mkdir($parent, 0775, true) && ! is_dir($parent)) {
-            throw new RuntimeException('Could not create the public theme asset root.');
-        }
+        try { FilesystemPermissions::ensureDirectory($parent, FilesystemPermissions::PUBLIC_DIRECTORY); }
+        catch (RuntimeException $error) { throw new RuntimeException('Could not create the public theme asset root.', 0, $error); }
 
         $token = bin2hex(random_bytes(8));
         $staging = $parent . '/.' . $manifest->slug . '.staging-' . $token;
@@ -151,18 +151,17 @@ final class ThemeAssetPublisher
     /** @param list<array{source:string,relative:string,sha256:string}> $plan */
     private function copyPlanToStaging(array $plan, string $staging): void
     {
-        if (! mkdir($staging, 0775, true) && ! is_dir($staging)) {
-            throw new RuntimeException('Could not create the theme asset staging directory.');
-        }
+        try { FilesystemPermissions::ensureDirectory($staging, FilesystemPermissions::PUBLIC_DIRECTORY); }
+        catch (RuntimeException $error) { throw new RuntimeException('Could not create the theme asset staging directory.', 0, $error); }
         foreach ($plan as $file) {
             $target = $staging . '/' . $file['relative'];
             $directory = dirname($target);
-            if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
-                throw new RuntimeException('Could not create a staged theme asset directory.');
-            }
+            try { FilesystemPermissions::ensureDirectory($directory, FilesystemPermissions::PUBLIC_DIRECTORY); }
+            catch (RuntimeException $error) { throw new RuntimeException('Could not create a staged theme asset directory.', 0, $error); }
             if (! ($this->copyFile)($file['source'], $target)) {
                 throw new RuntimeException('Could not copy a theme asset to staging.');
             }
+            FilesystemPermissions::setFileMode($target, FilesystemPermissions::PUBLIC_FILE);
         }
     }
 

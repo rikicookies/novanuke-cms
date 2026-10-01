@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Downloads\src;
 
 use NovaNuke\Core\Storage\SafeStorageBoundary;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RuntimeException;
 
 final class DownloadStorage
@@ -19,7 +20,9 @@ final class DownloadStorage
         SafeStorageBoundary::ensureDirectory($this->directory);
         if (! is_uploaded_file($upload->temporaryPath)) throw new RuntimeException('Upload source was not accepted by PHP.');
         $stored = bin2hex(random_bytes(20)) . '.' . $upload->extension;
-        if (! move_uploaded_file($upload->temporaryPath, $this->directory . '/' . $stored)) throw new RuntimeException('The uploaded file could not be stored.');
+        $path = $this->directory . '/' . $stored;
+        if (! move_uploaded_file($upload->temporaryPath, $path)) throw new RuntimeException('The uploaded file could not be stored.');
+        FilesystemPermissions::setFileMode($path, FilesystemPermissions::PRIVATE_FILE);
         return ['stored_name' => $stored, 'original_name' => $upload->originalName, 'file_size' => $upload->size, 'mime_type' => $upload->mimeType];
     }
 

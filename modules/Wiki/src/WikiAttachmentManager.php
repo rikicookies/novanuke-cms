@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Wiki\src;
 
 use NovaNuke\Core\Storage\SafeStorageBoundary;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -64,6 +65,7 @@ final class WikiAttachmentManager
         $storedName = bin2hex(random_bytes(20)) . '.' . $upload['extension'];
         $path = $this->directory . '/' . $storedName;
         if (! move_uploaded_file($upload['temporary_path'], $path)) throw new RuntimeException('The Wiki attachment could not be stored.');
+        FilesystemPermissions::setFileMode($path, FilesystemPermissions::PRIVATE_FILE);
 
         try {
             $statement = $this->database->prepare(

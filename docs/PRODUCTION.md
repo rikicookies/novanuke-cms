@@ -23,6 +23,9 @@ The `log` mailer is development-only. Configure and test encrypted SMTP before e
 - Point the web document root to `public/`, never to the project root.
 - Keep `.env`, `vendor/`, `storage/private/`, migrations and source code outside public access.
 - Give the web/PHP user write access only where needed: `storage/cache`, `storage/logs`, `storage/sessions`, `storage/private` and published theme assets.
+- Release ZIP builders must encode source directories as Unix `0755` and source files as `0644`; do not use a Windows archive operation that drops directory traverse bits.
+- NovaNuke provisions public upload and published-theme directories as `0755` and their directly served files as `0644`. Runtime and private directories use `0700`, and private generated files use `0600`.
+- Keep `.env` owner-only (`0600` on POSIX). Never make `storage/private` or private downloads, backups or avatars public to solve a public-media serving problem.
 - Do not use world-writable permissions such as `0777` unless a host leaves no safer option, and then resolve it with the host.
 - Keep `storage/installed.lock` after every update.
 

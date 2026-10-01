@@ -67,6 +67,19 @@ php bin/cms release:smoke
 
 This command executes before application bootstrap and does not require a database. It checks distribution completeness, release/version metadata, bundled module manifests, migration file safety and private-storage guards. A release archive that fails this command should not be deployed.
 
+Build a ZIP from a clean staging tree with the repository packager so Unix
+directory/file modes are encoded explicitly:
+
+```bash
+php bin/cms release:package --source=/path/to/clean-staging --output=/path/to/release.zip
+```
+
+The packager excludes local environment and runtime data, generated theme
+assets, repository/IDE/QA artifacts and ZIP files. It writes source and public
+files as `0644` and directories as `0755`, while preserving required runtime
+guards such as `.gitkeep` and `.htaccess`. Composer dependencies are validation
+inputs only and are not included in the source archive.
+
 After extraction, continue with `release:check`, `migrate:status`, `production:check`, `security:audit` and the normal upgrade completion workflow.
 
 `rc:check` is a database-independent source-package gate that rejects local `.env`, installation locks, runtime logs/cache/backups, stale release metadata and incomplete RC documentation.

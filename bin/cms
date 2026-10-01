@@ -21,6 +21,7 @@ use NovaNuke\Core\System\ReleaseCandidateDeploymentCheck;
 use NovaNuke\Core\System\DistributionSmokeCheck;
 use NovaNuke\Core\System\InstalledSiteHealthCheck;
 use NovaNuke\Core\System\ReleaseCandidateChecklist;
+use NovaNuke\Core\System\ReleaseArchiveBuilder;
 use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Version;
@@ -77,6 +78,26 @@ if ($command === 'release:smoke') {
         fwrite($check['passed'] ? STDOUT : STDERR, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['name'] . ': ' . $check['detail'] . "\n");
     }
     exit($passed ? 0 : 1);
+}
+
+if ($command === 'release:package') {
+    $source = null;
+    $output = null;
+    foreach (array_slice($argv, 2) as $argument) {
+        if (str_starts_with($argument, '--source=')) $source = substr($argument, 9);
+        elseif (str_starts_with($argument, '--output=')) $output = substr($argument, 9);
+        else { fwrite(STDERR, "Usage: php bin/cms release:package --source=PATH --output=PATH\n"); exit(2); }
+    }
+    if (! is_string($source) || $source === '' || ! is_string($output) || $output === '') {
+        fwrite(STDERR, "Usage: php bin/cms release:package --source=PATH --output=PATH\n"); exit(2);
+    }
+    try {
+        $entries = (new ReleaseArchiveBuilder())->build($source, $output);
+        fwrite(STDOUT, "Release archive created: {$output}\nEntries: {$entries}\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Release archive failed: {$error->getMessage()}\n"); exit(1);
+    }
 }
 
 if ($command === 'i18n:check') {

@@ -6,6 +6,7 @@ namespace NovaNuke\Core\Http;
 
 use Closure;
 use ErrorException;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use NovaNuke\Core\Http\Routing\MethodNotAllowed;
 use NovaNuke\Core\Http\Routing\RouteNotFound;
 use Throwable;
@@ -198,7 +199,7 @@ final class ErrorHandler
             }
 
             $directory = dirname($this->logPath);
-            if (! is_dir($directory) && ! @mkdir($directory, 0775, true) && ! is_dir($directory)) {
+            if (! is_dir($directory) && ! @mkdir($directory, FilesystemPermissions::PRIVATE_DIRECTORY, true) && ! is_dir($directory)) {
                 return;
             }
 
@@ -213,6 +214,7 @@ final class ErrorHandler
                 PHP_EOL,
             );
             @error_log($line, 3, $this->logPath);
+            if (is_file($this->logPath)) @chmod($this->logPath, FilesystemPermissions::PRIVATE_FILE);
         } catch (Throwable) {
             // Error reporting must never depend on diagnostic storage.
         }

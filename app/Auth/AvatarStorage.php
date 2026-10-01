@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Auth;
 
 use NovaNuke\Core\Storage\SafeStorageBoundary;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RuntimeException;
 
 final class AvatarStorage
@@ -16,13 +17,15 @@ final class AvatarStorage
     public function store(ValidatedAvatar $avatar): string
     {
         try {
-            SafeStorageBoundary::ensureDirectory($this->directory, 0750);
+            SafeStorageBoundary::ensureDirectory($this->directory, FilesystemPermissions::PRIVATE_DIRECTORY);
         } catch (RuntimeException) {
             throw new RuntimeException('Avatar storage is unavailable.');
         }
         if (! is_uploaded_file($avatar->temporaryPath)) throw new RuntimeException('Avatar storage is unavailable.');
         $filename = bin2hex(random_bytes(20)) . '.' . $avatar->extension;
-        if (! move_uploaded_file($avatar->temporaryPath, $this->directory . '/' . $filename)) throw new RuntimeException('Avatar could not be stored.');
+        $path = $this->directory . '/' . $filename;
+        if (! move_uploaded_file($avatar->temporaryPath, $path)) throw new RuntimeException('Avatar could not be stored.');
+        FilesystemPermissions::setFileMode($path, FilesystemPermissions::PRIVATE_FILE);
         return '/avatars/' . $filename;
     }
 

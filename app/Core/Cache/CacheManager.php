@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Cache;
 
 use FilesystemIterator;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
@@ -17,9 +18,7 @@ final class CacheManager
 
     public function clear(): int
     {
-        if (! is_dir($this->cachePath) && ! mkdir($this->cachePath, 0750, true) && ! is_dir($this->cachePath)) {
-            throw new RuntimeException('Unable to create the cache directory.');
-        }
+        FilesystemPermissions::ensureDirectory($this->cachePath, FilesystemPermissions::PRIVATE_DIRECTORY);
         $root = realpath($this->cachePath);
         if ($root === false || $root === DIRECTORY_SEPARATOR || ! is_writable($root)) {
             throw new RuntimeException('Refusing to clear an unsafe or unwritable cache path.');

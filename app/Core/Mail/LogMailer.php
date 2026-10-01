@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Mail;
 
 use NovaNuke\Core\I18n\Translator;
+use NovaNuke\Core\Storage\FilesystemPermissions;
 use RuntimeException;
 
 final class LogMailer implements Mailer
@@ -63,6 +64,7 @@ final class LogMailer implements Mailer
         $lines=['------------------------------------------------------------','Date: '.gmdate('c'),'From: '.$this->singleLine($this->fromName).' <'.$this->singleLine($this->fromAddress).'>','To: '.$this->singleLine($recipient),'Subject: '.$subject];
         if($replyTo!==null) $lines[]='Reply-To: '.$this->singleLine($replyTo); $lines[]=''; $lines[]=$body; $lines[]='------------------------------------------------------------'; $lines[]='';
         if(file_put_contents($this->path,implode(PHP_EOL,$lines),FILE_APPEND|LOCK_EX)===false) throw new RuntimeException('The development email could not be written.');
+        FilesystemPermissions::setFileMode($this->path, FilesystemPermissions::PRIVATE_FILE);
     }
 
     private function singleLine(string $value): string
@@ -98,6 +100,7 @@ final class LogMailer implements Mailer
         if (file_put_contents($this->path, $message, FILE_APPEND | LOCK_EX) === false) {
             throw new RuntimeException('The development email could not be written.');
         }
+        FilesystemPermissions::setFileMode($this->path, FilesystemPermissions::PRIVATE_FILE);
     }
 
     /** @param array<string, scalar|null> $parameters */

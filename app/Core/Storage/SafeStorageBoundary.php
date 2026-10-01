@@ -8,26 +8,9 @@ use RuntimeException;
 
 final class SafeStorageBoundary
 {
-    public static function ensureDirectory(string $directory, int $mode = 0770): string
+    public static function ensureDirectory(string $directory, int $mode = FilesystemPermissions::PRIVATE_DIRECTORY): string
     {
-        if (is_link($directory)) {
-            throw new RuntimeException('Storage directory must not be a symbolic link.');
-        }
-
-        if (! is_dir($directory) && ! mkdir($directory, $mode, true) && ! is_dir($directory)) {
-            throw new RuntimeException('Storage directory could not be created.');
-        }
-
-        $root = realpath($directory);
-        if ($root === false || ! is_dir($root) || is_link($root)) {
-            throw new RuntimeException('Storage directory is unavailable.');
-        }
-
-        if (! is_writable($root)) {
-            throw new RuntimeException('Storage directory is not writable.');
-        }
-
-        return $root;
+        return FilesystemPermissions::ensureDirectory($directory, $mode);
     }
 
     public static function existingFile(string $directory, string $filename): string

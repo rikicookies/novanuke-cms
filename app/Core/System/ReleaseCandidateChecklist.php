@@ -56,7 +56,7 @@ final class ReleaseCandidateChecklist
         $readme=@file_get_contents($this->rootPath.'/README.md');
         $notes=$this->rootPath.'/docs/RELEASE_NOTES_'.Version::CURRENT.'.md';
         $metadata=is_string($readme)
-            &&str_contains($readme,'Current development release: **'.Version::CURRENT.'**')
+            &&str_contains($readme,'Current public release: **'.Version::CURRENT.'**')
             &&is_file($notes)
             &&str_contains((string)file_get_contents($notes),Version::CURRENT);
         $this->add(
