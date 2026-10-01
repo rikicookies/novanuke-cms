@@ -34,7 +34,7 @@ final class FilesystemPermissionsTest extends TestCase
         if (! class_exists(ZipArchive::class)) self::markTestSkipped('PHP ZIP extension is unavailable.');
         mkdir($this->root . '/modules/Search/database/migrations', 0755, true);
         mkdir($this->root . '/public/uploads/media/2026/10', 0755, true);
-        chmod($this->root . '/modules/Search/database', 0644);
+        chmod($this->root . '/modules/Search/database', 0750);
         chmod($this->root . '/public/uploads/media', 0750);
         mkdir($this->root . '/storage/private/backups', 0700, true);
         mkdir($this->root . '/public/assets/themes/novamodern', 0755, true);
@@ -48,6 +48,12 @@ final class FilesystemPermissionsTest extends TestCase
         file_put_contents($this->root . '/.github/workflow.yml', 'development');
         file_put_contents($this->root . '/ECC-AUDIT.md', 'development report');
         file_put_contents($this->root . '/README.md', 'release');
+        chmod($this->root . '/modules/Search/database/migrations/example.php', 0600);
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            self::assertSame(0750, $this->permissionBits($this->root . '/modules/Search/database'));
+            self::assertSame(0600, $this->permissionBits($this->root . '/modules/Search/database/migrations/example.php'));
+        }
 
         $archive = $this->root . '/out/release.zip';
         $count = (new ReleaseArchiveBuilder())->build($this->root, $archive);
