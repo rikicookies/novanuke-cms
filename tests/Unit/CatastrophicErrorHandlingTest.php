@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace NovaNukeTests\Unit;
+namespace NovaNuke\Tests\Unit;
 
 use NovaNuke\Core\Http\EmergencyResponse;
 use NovaNuke\Core\Http\ErrorHandler;

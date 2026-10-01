@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace NovaNuke\Tests\Unit;
+
 use PHPUnit\Framework\TestCase;
 
 final class AdminModulesAjaxContractTest extends TestCase
