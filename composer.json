@@ -45,7 +45,7 @@
             "@test:integration"
         ],
         "serve": "php -S 127.0.0.1:8080 -t public",
-        "test:membership": "@php tests/run-membership-validation.php",
+        "test:membership": "@php bin/cms membership:check",
         "test:checkpoint": [
             "@php vendor/bin/phpunit --display-warnings --display-skipped",
             "@php tests/run-integration.php"

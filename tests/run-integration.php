@@ -26,30 +26,6 @@ $_ENV['NOVANUKE_RUN_INTEGRATION'] = '1';
 $_SERVER['NOVANUKE_RUN_INTEGRATION'] = '1';
 putenv('NOVANUKE_RUN_INTEGRATION=1');
 
-$testFiles = [];
-foreach ([$root . '/tests/Integration', $root . '/modules'] as $directory) {
-    if (! is_dir($directory)) {
-        continue;
-    }
-
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
-    );
-    foreach ($iterator as $file) {
-        if ($file->isFile() && $file->getExtension() === 'php' && str_ends_with($file->getFilename(), 'Test.php')) {
-            $testFiles[] = $file->getPathname();
-        }
-    }
-}
-
-$testFiles = array_values(array_unique($testFiles));
-sort($testFiles, SORT_STRING);
-
-if ($testFiles === []) {
-    fwrite(STDERR, "No integration test files were found." . PHP_EOL);
-    exit(1);
-}
-
 $phpunit = $root . '/vendor/phpunit/phpunit/phpunit';
 if (! is_file($phpunit)) {
     fwrite(STDERR, "PHPUnit is required. Run composer install before integration tests." . PHP_EOL);
@@ -58,11 +34,13 @@ if (! is_file($phpunit)) {
 
 $arguments = [
     $phpunit,
-    '--no-configuration',
+    '--configuration',
+    $root . '/phpunit.xml.dist',
+    '--testsuite',
+    'Integration',
     '--bootstrap',
     $autoload,
     '--do-not-cache-result',
-    ...$testFiles,
 ];
 
 $command = escapeshellarg(PHP_BINARY);

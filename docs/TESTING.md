@@ -8,7 +8,10 @@ NovaNuke separates fast unit tests from MySQL/MariaDB integration tests. Neither
 composer test
 ```
 
-This runs only the `Unit` suite and requires no database.
+This runs only the `Unit` suite and requires no MySQL database. Some unit
+tests use `sqlite::memory:`; development and CI PHP installations therefore
+need `pdo_sqlite`. This is a test-only extension and is not a NovaNuke
+production database requirement.
 
 ## Integration tests on Laragon
 
@@ -18,7 +21,11 @@ Copy the testing example once:
 copy .env.testing.example .env.testing
 ```
 
-The defaults use Laragon's common MySQL connection: `127.0.0.1:3306`, user `root` and an empty password. Adjust only `.env.testing` when your local database credentials differ. The real file is ignored by Git and release packages.
+The example uses Laragon's common MySQL connection: `127.0.0.1:3306`, user
+`root` and an empty password. Adjust only `.env.testing` when your local test
+server credentials differ. The real file is ignored by Git and release
+packages. The test account must be able to create and drop databases, and must
+not be a production account.
 
 Run:
 
@@ -26,7 +33,13 @@ Run:
 composer test:integration
 ```
 
-Every integration test creates a new database named `novanuke_test_` followed by 16 random hexadecimal characters, executes the core migrations and removes that exact temporary database afterward. The harness refuses names outside that pattern. It never accepts the normal application database name as a deletion target.
+The runner loads `.env.testing`, enables the integration flag, and invokes the
+dedicated PHPUnit `Integration` suite from `phpunit.xml.dist`. It does not run
+the Unit suite or module package tests. Every integration test creates a new
+database named `novanuke_test_` followed by 16 random hexadecimal characters,
+executes the core migrations and removes that exact temporary database
+afterward. The harness refuses names outside that pattern and refuses to use
+the configured application database name as an integration database.
 
 The database account needs temporary `CREATE DATABASE` and `DROP DATABASE` privileges. This is appropriate for local Laragon development but commonly unavailable—and not recommended—on production shared hosting.
 
@@ -75,7 +88,29 @@ Before packaging a checkpoint for target-environment QA, also run:
 composer check:release
 ```
 
-This groups install requirements, production readiness, and Membership integrity checks. It is intentionally separate from `test:checkpoint` because these checks inspect the current installation/environment.
+This groups install requirements, production readiness, and Membership
+integrity checks. It is intentionally separate from `test:checkpoint` because
+these checks inspect the current installation/environment.
+
+## Membership validation
+
+```bash
+composer test:membership
+```
+
+This is the Composer entry point for the existing read-only
+`php bin/cms membership:check` health check. It validates membership schema and
+data integrity on an already-installed site; it is not a PHPUnit unit suite
+and it does not create, migrate, or repair data. Run it only with the intended
+development/staging `.env` database, never against production or an unrelated
+application database. Membership behavior itself has no dedicated PHPUnit
+suite in the current repository, so this command must not be described as
+full membership behavior coverage.
+
+On Windows/Laragon, use PowerShell or Command Prompt from the repository after
+Composer installation. On Linux/CI, install the declared PHP extensions plus
+`pdo_sqlite` for unit tests; CI integration uses the isolated MySQL service and
+the `NOVANUKE_TEST_DB_*` variables shown in `.env.testing.example`.
 
 
 ## Installation versus installed-site checks
