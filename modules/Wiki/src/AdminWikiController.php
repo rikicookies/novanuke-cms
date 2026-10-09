@@ -44,6 +44,64 @@ final class AdminWikiController
         return $this->listing($request);
     }
 
+    public function namespaces(Request $request): Response
+    {
+        if ($guard = $this->guard('wiki.edit')) return $guard;
+        $namespace = $request->query('namespace', '');
+        try {
+            $namespace = $this->input->namespace($namespace);
+        } catch (RuntimeException) {
+            $namespace = '';
+        }
+        return $this->namespaceManager(form: [
+            'old_namespace' => $namespace,
+            'include_descendants' => false,
+        ]);
+    }
+
+    public function moveNamespace(Request $request): Response
+    {
+        if ($guard = $this->guard('wiki.edit')) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html($this->translate('admin.error.csrf', 'Invalid or expired CSRF token.'), 419);
+        try {
+            $old = $this->input->namespace($request->input('old_namespace'));
+            $new = $this->input->namespace($request->input('new_namespace'));
+            if ($old === '' || $new === '') throw new RuntimeException('Root namespace moves are not supported.');
+            if ($old === $new) throw new RuntimeException('Choose a different destination namespace.');
+            if (str_starts_with($new, $old . ':')) throw new RuntimeException('A namespace cannot be moved inside itself.');
+            $includeDescendants = $request->input('include_descendants') === '1';
+            $plan = $this->pages->namespaceMovePlan($old, $new, $includeDescendants);
+            if ($plan['affected_count'] === 0) throw new RuntimeException('Wiki namespace has no pages to move.');
+            if ($request->input('confirm_move') !== '1') return $this->namespaceManager($plan, form: [
+                'old_namespace' => $old, 'new_namespace' => $new, 'include_descendants' => $includeDescendants,
+            ]);
+            if ($plan['collisions'] !== []) throw new RuntimeException('Resolve namespace path collisions before moving pages.');
+            $plan = $this->pages->renameNamespace($old, $new, $includeDescendants);
+            $actor = $this->auth->user();
+            $this->activity->log((int) $actor['id'], 'wiki.namespace.moved', 'wiki_namespace', null, [
+                'old_namespace' => $old, 'new_namespace' => $new,
+                'affected_count' => $plan['affected_count'], 'include_descendants' => $includeDescendants,
+            ], $request->ip());
+            $this->session->put('wiki.namespace_message', $this->translate('admin.namespaces.moved', 'Namespace moved. Review Missing Links for references to old Wiki paths.', ['count' => $plan['affected_count']]));
+            return Response::redirect('/admin/wiki/namespaces', 303);
+        } catch (RuntimeException $error) {
+            return $this->namespaceManager(null, $this->namespaceError($error->getMessage()), 422, [
+                'old_namespace' => (string) $request->input('old_namespace', ''),
+                'new_namespace' => (string) $request->input('new_namespace', ''),
+                'include_descendants' => $request->input('include_descendants') === '1',
+            ]);
+        }
+    }
+
+    /** @param array<string,mixed>|null $plan @param array<string,mixed> $form */
+    private function namespaceManager(?array $plan = null, ?string $error = null, int $status = 200, array $form = []): Response
+    {
+        return Response::html($this->views->render('@wiki/admin/namespaces.twig', [
+            'namespaces' => $this->pages->namespaceSummary(), 'plan' => $plan, 'error' => $error, 'form' => $form,
+            'message' => $this->session->pull('wiki.namespace_message'), 'csrf_token' => $this->csrf->token(),
+        ]), $status);
+    }
+
     public function missingLinks(): Response
     {
         if ($guard = $this->guard('wiki.edit')) return $guard;
@@ -566,6 +624,23 @@ final class AdminWikiController
     }
 
     /** @param array<string,scalar|null> $parameters */
+    private function namespaceError(string $message): string
+    {
+        $keys = [
+            'Invalid wiki namespace.' => 'invalid',
+            'Each wiki namespace segment must not exceed 120 characters.' => 'segment',
+            'Root namespace moves are not supported.' => 'root',
+            'Choose a different destination namespace.' => 'same',
+            'A namespace cannot be moved inside itself.' => 'inside_self',
+            'Wiki namespace has no pages to move.' => 'empty',
+            'Resolve namespace path collisions before moving pages.' => 'collisions',
+            'Wiki namespace move has path collisions.' => 'collisions',
+            'The destination namespace or page path is too long.' => 'destination_length',
+            'A historical Wiki path is already assigned to another page.' => 'alias_collision',
+        ];
+        return isset($keys[$message]) ? $this->translate('admin.namespaces.error.' . $keys[$message], $message) : $message;
+    }
+
     private function translate(string $key, string $fallback, array $parameters = []): string
     {
         return $this->translator?->translate('wiki::' . $key, $parameters) ?? $fallback;

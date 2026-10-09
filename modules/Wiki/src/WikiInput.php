@@ -40,7 +40,7 @@ final class WikiInput
     public function path(mixed $value): string
     {
         $path = strtolower(trim((string) $value));
-        if (strlen($path) > 240 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$/', $path)) {
+        if (strlen($path) > 311 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$/', $path)) {
             throw new RuntimeException('Wiki paths use lowercase words separated by hyphens and namespaces separated by colons.');
         }
         foreach (explode(':', $path) as $part) {

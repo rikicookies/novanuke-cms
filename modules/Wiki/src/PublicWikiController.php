@@ -43,6 +43,13 @@ final class PublicWikiController
             return Response::html($this->translate('error.namespace_not_found', 'Wiki namespace not found.'), 404);
         }
         $user = $this->auth->user();
+        if ($namespace !== '') {
+            $start = $this->pages->publishedByPath($namespace . ':start');
+            if ($start !== null && $this->pages->canView($start, $user ? (int) $user['id'] : null)) {
+                $canEdit = $user !== null && $this->authorization->allows((int) $user['id'], 'wiki.edit');
+                return $this->renderPage($start, $user, $canEdit);
+            }
+        }
         $directory = $this->navigation->directory(
             $this->pages->directory($user ? (int) $user['id'] : null),
             $namespace,
@@ -109,6 +116,22 @@ final class PublicWikiController
         $canEdit = $user !== null && $this->authorization->allows((int) $user['id'], 'wiki.edit');
         $page = $this->pages->publishedByPath($path);
         if ($page === null) {
+            $canonical = $this->pages->byPath($path);
+            if ($canonical === null) {
+                $alias = $this->pages->publishedByAlias($path);
+                if ($alias !== null && $this->pages->canView($alias, $user ? (int) $user['id'] : null)) return Response::redirect('/wiki/' . $alias['path'], 301);
+                try {
+                    $namespace = $this->input->namespace($path);
+                    $start = $this->pages->publishedByPath($namespace . ':start');
+                    if ($start !== null && $this->pages->canView($start, $user ? (int) $user['id'] : null)) return $this->renderPage($start, $user, $canEdit);
+                    $directory = $this->navigation->directory($this->pages->directory($user ? (int) $user['id'] : null), $namespace);
+                    if ($directory['pages'] !== [] || $directory['namespaces'] !== []) return Response::html($this->views->render('@wiki/index.twig', [
+                        'namespace' => $namespace, 'pages' => $directory['pages'], 'namespaces' => $directory['namespaces'],
+                        'breadcrumbs' => $directory['breadcrumbs'], 'can_create' => $canEdit,
+                    ]));
+                } catch (RuntimeException) {
+                }
+            }
             $draft = $canEdit ? $this->pages->byPath($path) : null;
             return Response::html($this->views->render('@wiki/missing.twig', [
                 'path' => $path,
@@ -121,6 +144,13 @@ final class PublicWikiController
         if (! $this->pages->canView($page, $user ? (int) $user['id'] : null)) {
             return $user === null ? Response::redirect('/login') : Response::html($this->translate('error.page_unavailable_account', 'This wiki page is not available for your account.'), 403);
         }
+        return $this->renderPage($page, $user, $canEdit);
+    }
+
+    /** @param array<string,mixed> $page @param array<string,mixed>|null $user */
+    private function renderPage(array $page, ?array $user, bool $canEdit): Response
+    {
+        $path = (string) $page['path'];
         $visiblePages = $this->pages->directory($user ? (int) $user['id'] : null);
         $visiblePaths = array_map(
             static fn (array $item): string => ($item['namespace'] === '' ? '' : $item['namespace'] . ':') . $item['slug'],

@@ -1,0 +1,72 @@
+{% extends "layouts/admin.twig" %}
+
+{% block title %}{{ trans('wiki::admin.namespaces.title') }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ trans('wiki::admin.namespaces.title') }}</h1>
+        <a class="btn btn-outline-secondary" href="/admin/wiki">{{ trans('wiki::admin.namespaces.back') }}</a>
+    </div>
+
+    <p class="text-muted">{{ trans('wiki::admin.namespaces.description') }}</p>
+    <div class="alert alert-info">{{ trans('wiki::admin.namespaces.links_warning') }}</div>
+
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    {% if message %}<div class="alert alert-success">{{ message }}</div>{% endif %}
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">{{ trans('wiki::admin.namespaces.available') }}</h2>
+                    {% if namespaces is empty %}
+                        <p class="text-muted">{{ trans('wiki::admin.namespaces.empty') }}</p>
+                    {% else %}
+                        <div class="list-group">
+                        {% for item in namespaces %}
+                            <a class="list-group-item list-group-item-action" href="/admin/wiki/namespaces?namespace={{ item.namespace|url_encode }}">
+                                <strong>{{ item.namespace }}</strong>
+                                <span class="d-block small text-muted">{{ trans('wiki::admin.namespaces.direct_pages', {'count': item.direct_pages}) }}</span>
+                            </a>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">{{ trans('wiki::admin.namespaces.move_title') }}</h2>
+                    <p class="text-muted">{{ trans('wiki::admin.namespaces.move_help') }}</p>
+                    <form method="post" action="/admin/wiki/namespaces/move">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <input type="hidden" name="old_namespace" value="{{ form.old_namespace|default('') }}">
+                        <div class="mb-3">
+                            <label class="form-label" for="new_namespace">{{ trans('wiki::admin.namespaces.destination') }}</label>
+                            <input class="form-control" id="new_namespace" name="new_namespace" value="{{ form.new_namespace|default('') }}" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="include_descendants" name="include_descendants" value="1"{% if form.include_descendants %} checked{% endif %}>
+                            <label class="form-check-label" for="include_descendants">{{ trans('wiki::admin.namespaces.descendants') }}</label>
+                        </div>
+                        <button class="btn btn-primary" type="submit" name="preview" value="1">{{ trans('wiki::admin.namespaces.review') }}</button>
+                        {% if plan and not plan.collisions %}
+                            <div class="mt-3">
+                                <p>{{ trans('wiki::admin.namespaces.review_help', {'count': plan.affected_count}) }}</p>
+                                <input type="hidden" name="confirm_move" value="1">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="confirm" name="confirm" value="1" required>
+                                    <label class="form-check-label" for="confirm">{{ trans('wiki::admin.namespaces.confirm') }}</label>
+                                </div>
+                                <button class="btn btn-danger" type="submit">{{ trans('wiki::admin.namespaces.move_now') }}</button>
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,7 +19,7 @@ final class WikiPackageTest extends TestCase
     {
         $manifest = json_decode((string) file_get_contents($this->root . '/module.json'), true, 32, JSON_THROW_ON_ERROR);
         self::assertSame('wiki', $manifest['slug']);
-        self::assertSame('2.3.0', $manifest['version']);
+        self::assertSame('2.4.0', $manifest['version']);
         self::assertSame('Modules\\Wiki\\src\\WikiModule', $manifest['provider']);
         self::assertSame(['wiki.edit', 'wiki.publish'], $manifest['permissions']);
 
@@ -32,7 +32,9 @@ final class WikiPackageTest extends TestCase
         foreach (['WikiModule', 'WikiRepository', 'PublicWikiController', 'AdminWikiController', 'WikiPageChanged', 'WikiMarkdownRenderer'] as $class) {
             self::assertFileExists($this->root . '/src/' . $class . '.php', $class);
         }
-        self::assertCount(4, glob($this->root . '/database/migrations/*.php') ?: []);
+        self::assertFileExists($this->root . '/views/admin/namespaces.twig');
+        self::assertFileExists($this->root . '/database/migrations/2026_10_08_000005_create_wiki_path_aliases.php');
+        self::assertCount(5, glob($this->root . '/database/migrations/*.php') ?: []);
     }
 
     public function testCataloguesMatchAndViewsOnlyUseDeclaredKeys(): void

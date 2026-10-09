@@ -29,4 +29,18 @@ final class WikiScalabilityContractTest extends TestCase
         self::assertStringContainsString("'/admin/wiki/missing-links'", $module);
         self::assertFileExists($view);
     }
+
+    public function testNamespaceManagementAndStartLandingAreModuleOwned(): void
+    {
+        $module = (string) file_get_contents(dirname(__DIR__) . '/src/WikiModule.php');
+        $public = (string) file_get_contents(dirname(__DIR__) . '/src/PublicWikiController.php');
+        $repository = (string) file_get_contents(dirname(__DIR__) . '/src/WikiRepository.php');
+
+        self::assertStringContainsString("'/admin/wiki/namespaces'", $module);
+        self::assertStringContainsString("'/admin/wiki/namespaces/move'", $module);
+        self::assertStringContainsString("\$namespace . ':start'", $public);
+        self::assertStringContainsString('namespaceMovePlan', $repository);
+        self::assertStringContainsString('renameNamespace', $repository);
+        self::assertFileExists(dirname(__DIR__) . '/views/admin/namespaces.twig');
+    }
 }

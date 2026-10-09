@@ -81,6 +81,154 @@ final class WikiRepository
         return array_map('strval', $this->database->query('SELECT DISTINCT namespace FROM wiki_pages WHERE deleted_at IS NULL ORDER BY namespace')->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    /** @return list<array{namespace:string,pages:int,direct_pages:int}> */
+    public function namespaceSummary(): array
+    {
+        $rows = $this->database->query("SELECT namespace FROM wiki_pages WHERE deleted_at IS NULL AND namespace<>'' ORDER BY namespace")->fetchAll(PDO::FETCH_COLUMN);
+        $counts = [];
+        $direct = [];
+        foreach ($rows as $value) {
+            $namespace = (string) $value;
+            $direct[$namespace] = ($direct[$namespace] ?? 0) + 1;
+            $parts = explode(':', $namespace);
+            for ($i = 1; $i <= count($parts); $i++) {
+                $parent = implode(':', array_slice($parts, 0, $i));
+                $counts[$parent] = ($counts[$parent] ?? 0) + 1;
+            }
+        }
+        ksort($counts, SORT_NATURAL);
+        $result = [];
+        foreach ($counts as $namespace => $pages) $result[] = ['namespace' => $namespace, 'pages' => $pages, 'direct_pages' => $direct[$namespace] ?? 0];
+        return $result;
+    }
+
+    /** @return array{old:string,new:string,include_descendants:bool,affected:list<array{id:int,from:string,to:string}>,collisions:list<array{from:string,to:string}>,affected_count:int} */
+    public function namespaceMovePlan(string $old, string $new, bool $includeDescendants): array
+    {
+        $rows = $this->database->query('SELECT id,namespace,slug FROM wiki_pages WHERE deleted_at IS NULL ORDER BY namespace,slug,id')->fetchAll();
+        $plan = $this->buildNamespaceMovePlan($rows, $old, $new, $includeDescendants);
+        self::validateNamespaceMoveTargets($plan['affected']);
+        return $plan;
+    }
+
+    /** @return array{old:string,new:string,include_descendants:bool,affected:list<array{id:int,from:string,to:string}>,collisions:list<array{from:string,to:string}>,affected_count:int} */
+    public function renameNamespace(string $old, string $new, bool $includeDescendants): array
+    {
+        $this->database->beginTransaction();
+        try {
+            $rows = $this->database->query('SELECT id,namespace,slug FROM wiki_pages WHERE deleted_at IS NULL ORDER BY namespace,slug,id FOR UPDATE')->fetchAll();
+            $plan = $this->buildNamespaceMovePlan($rows, $old, $new, $includeDescendants);
+            if ($plan['affected_count'] === 0) throw new RuntimeException('Wiki namespace has no pages to move.');
+            if ($plan['collisions'] !== []) throw new RuntimeException('Wiki namespace move has path collisions.');
+            self::validateNamespaceMoveTargets($plan['affected']);
+            $this->assertAliasCollisions($plan['affected']);
+            $this->createAliases($plan['affected']);
+            $statement = $this->database->prepare('UPDATE wiki_pages SET namespace=:namespace,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL');
+            foreach ($plan['affected'] as $item) {
+                $target = str_contains($item['to'], ':') ? substr($item['to'], 0, (int) strrpos($item['to'], ':')) : '';
+                $statement->execute(['namespace' => $target, 'id' => $item['id']]);
+            }
+            $this->database->commit();
+            return $plan;
+        } catch (PDOException $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            if ($error->getCode() === '23000') throw new RuntimeException('A historical Wiki path is already assigned to another page.', 0, $error);
+            throw $error;
+        } catch (\Throwable $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            throw $error;
+        }
+    }
+
+    /** @param list<array{id:int,from:string,to:string}> $affected */
+    public static function validateNamespaceMoveTargets(array $affected): void
+    {
+        foreach ($affected as $item) {
+            $to = (string) $item['to'];
+            if (preg_match('//u', $to) !== 1) throw new RuntimeException('The destination namespace or page path is too long.');
+            if (preg_match('/^[a-z0-9:-]+$/D', $to) !== 1) throw new RuntimeException('The destination namespace is invalid.');
+            [$namespace, $slug] = self::splitPath($to);
+            if (mb_strlen($namespace, 'UTF-8') > 190 || mb_strlen($slug, 'UTF-8') > 120 || mb_strlen($to, 'UTF-8') > 311) throw new RuntimeException('The destination namespace or page path is too long.');
+        }
+    }
+
+    /** @param list<array{id:int,from:string,to:string}> $affected */
+    private function assertAliasCollisions(array $affected): void
+    {
+        $paths = [];
+        foreach ($affected as $item) {
+            $paths[$item['from']] = (int) $item['id'];
+            $paths[$item['to']] = (int) $item['id'];
+        }
+        if ($paths === []) return;
+        $placeholders = implode(',', array_fill(0, count($paths), '?'));
+        $statement = $this->database->prepare("SELECT historical_path,wiki_page_id FROM wiki_path_aliases WHERE historical_path IN ({$placeholders})");
+        $statement->execute(array_keys($paths));
+        foreach ($statement->fetchAll() as $row) if ((int) $row['wiki_page_id'] !== $paths[(string) $row['historical_path']]) throw new RuntimeException('A historical Wiki path is already assigned to another page.');
+    }
+
+    /** @param list<array{id:int,from:string,to:string}> $affected */
+    private function createAliases(array $affected): void
+    {
+        $lookup = $this->database->prepare('SELECT wiki_page_id FROM wiki_path_aliases WHERE historical_path=:path FOR UPDATE');
+        $insert = $this->database->prepare('INSERT INTO wiki_path_aliases (historical_path,wiki_page_id,created_at) VALUES (:path,:page_id,UTC_TIMESTAMP())');
+        foreach ($affected as $item) {
+            $lookup->execute(['path' => $item['from']]);
+            $owner = $lookup->fetchColumn();
+            if ($owner !== false) {
+                if ((int) $owner !== (int) $item['id']) {
+                    throw new RuntimeException('A historical Wiki path is already assigned to another page.');
+                }
+                continue;
+            }
+            try {
+                $insert->execute(['path' => $item['from'], 'page_id' => $item['id']]);
+            } catch (PDOException $error) {
+                if ($error->getCode() === '23000') {
+                    throw new RuntimeException('A historical Wiki path is already assigned to another page.', 0, $error);
+                }
+                throw $error;
+            }
+        }
+    }
+
+    /** @return array{0:string,1:string} */
+    private static function splitPath(string $path): array
+    {
+        $position = strrpos($path, ':');
+        return $position === false ? ['', $path] : [substr($path, 0, $position), substr($path, $position + 1)];
+    }
+
+    /** @param list<array{id:mixed,namespace:mixed,slug:mixed}> $rows */
+    private function buildNamespaceMovePlan(array $rows, string $old, string $new, bool $includeDescendants): array
+    {
+        $movingIds = [];
+        $targets = [];
+        $affected = [];
+        foreach ($rows as $row) {
+            $namespace = (string) $row['namespace'];
+            $matches = $namespace === $old || ($includeDescendants && str_starts_with($namespace, $old . ':'));
+            if (! $matches) continue;
+            $suffix = $namespace === $old ? '' : substr($namespace, strlen($old));
+            $targetNamespace = $new . $suffix;
+            $from = ($namespace === '' ? '' : $namespace . ':') . (string) $row['slug'];
+            $to = ($targetNamespace === '' ? '' : $targetNamespace . ':') . (string) $row['slug'];
+            $id = (int) $row['id'];
+            $movingIds[$id] = true;
+            $targets[$to][] = $id;
+            $affected[] = ['id' => $id, 'from' => $from, 'to' => $to];
+        }
+        $collisions = [];
+        foreach ($targets as $path => $ids) if (count($ids) > 1) $collisions[$path] = ['from' => '(moving pages)', 'to' => $path];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            if (isset($movingIds[$id])) continue;
+            $path = ((string) $row['namespace'] === '' ? '' : (string) $row['namespace'] . ':') . (string) $row['slug'];
+            if (isset($targets[$path])) $collisions[$path] = ['from' => '(moving page)', 'to' => $path];
+        }
+        return ['old' => $old, 'new' => $new, 'include_descendants' => $includeDescendants, 'affected' => $affected, 'collisions' => array_values($collisions), 'affected_count' => count($affected)];
+    }
+
     /** @return list<array{namespace:string,slug:string,content:string}> */
     public function exportPages(): array
     {
@@ -166,6 +314,22 @@ final class WikiRepository
         $statement->execute(['namespace' => $namespace, 'slug' => $slug]);
         $page = $statement->fetch();
         return is_array($page) ? $this->withPath($page) : null;
+    }
+
+    /** @return array<string,mixed>|null */
+    public function publishedByAlias(string $path): ?array
+    {
+        try {
+            $statement = $this->database->prepare(
+                "SELECT w.*,a.historical_path,u.username FROM wiki_path_aliases a INNER JOIN wiki_pages w ON w.id=a.wiki_page_id INNER JOIN users u ON u.id=w.author_id "
+                . "WHERE a.historical_path=:path AND w.status='published' AND w.published_at<=UTC_TIMESTAMP() AND w.deleted_at IS NULL LIMIT 1"
+            );
+            $statement->execute(['path' => $path]);
+            $page = $statement->fetch();
+            return is_array($page) ? $this->withPath($page) : null;
+        } catch (PDOException) {
+            return null;
+        }
     }
 
     /** @return array<string,mixed>|null */
@@ -322,19 +486,19 @@ final class WikiRepository
                 . 'audience=:audience,comments_enabled=:comments_enabled,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL'
             );
             $statement->execute([
-                'namespace' => $revision['namespace'], 'slug' => $revision['slug'], 'title' => $revision['title'],
+                'namespace' => $page['namespace'], 'slug' => $page['slug'], 'title' => $revision['title'],
                 'content' => $revision['content'], 'status' => $revision['status'], 'audience' => $revision['audience'],
                 'comments_enabled' => $revision['comments_enabled'],
                 'published_at' => $revision['published_at'], 'id' => $pageId,
             ]);
             $data = [
-                'namespace' => $revision['namespace'], 'slug' => $revision['slug'], 'title' => $revision['title'],
+                'namespace' => $page['namespace'], 'slug' => $page['slug'], 'title' => $revision['title'],
                 'content' => $revision['content'], 'status' => $revision['status'], 'audience' => $revision['audience'],
                 'comments_enabled' => $revision['comments_enabled'],
             ];
             $number = $this->insertRevision($pageId, $data, $revision['published_at'], $actorId);
             $this->database->commit();
-            return ['path' => ($revision['namespace'] === '' ? '' : $revision['namespace'] . ':') . $revision['slug'], 'revision_number' => $number];
+            return ['path' => ($page['namespace'] === '' ? '' : $page['namespace'] . ':') . $page['slug'], 'revision_number' => $number];
         } catch (PDOException $error) {
             if ($this->database->inTransaction()) $this->database->rollBack();
             if ($error->getCode() === '23000') throw new RuntimeException('The restored wiki path is already in use.', 0, $error);

@@ -1,14 +1,14 @@
 {% extends "layouts/admin.twig" %}
 {% block title %}{{ page.id|default(false) ? trans('wiki::admin.editor.edit_title') : trans('wiki::admin.editor.create_title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
-{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css">{% endblock %}
+{% block meta %}<link rel="stylesheet" href="/wiki-assets/wiki.css?v=2.4.0">{% endblock %}
 {% block content %}
-<section class="admin-page nn-admin-workspace nn-wiki-admin">
+<section class="admin-page nn-admin-workspace nn-wiki-admin nn-wiki-editor-page">
     {% set editor_title = page.id|default(false) ? trans('wiki::admin.editor.edit') : trans('wiki::admin.editor.create') %}
     {% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('admin.title'), url: '/admin'}, {label: trans('wiki::index.title'), url: '/admin/wiki'}, {label: editor_title}]} only %}
     {% include 'components/admin-page-heading.twig' with {eyebrow: trans('wiki::index.title'), title: editor_title, description: page.id|default(false) ? trans('wiki::admin.editor.edit_help') : trans('wiki::admin.editor.create_help')} only %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
     {% if notice %}<div class="notice-message">{{ notice }}</div>{% endif %}
-    <form class="news-editor" method="post" action="/admin/wiki/save">
+    <form class="news-editor nn-wiki-editor-form" method="post" action="/admin/wiki/save">
         <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ page.id|default('') }}">
         <div class="form-grid"><label>{{ trans('wiki::admin.editor.title') }}<input name="title" required maxlength="200" value="{{ page.title|default('') }}"></label><label>{{ trans('wiki::admin.editor.path') }}<input name="path" required maxlength="240" pattern="[a-z0-9]+(-[a-z0-9]+)*(:[a-z0-9]+(-[a-z0-9]+)*)*" value="{{ page.path|default('') }}" placeholder="guides:getting-started"><small>{{ trans('wiki::admin.editor.path_help') }}</small></label></div>
         <section class="dashboard-card wiki-link-helper">

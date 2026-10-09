@@ -1,6 +1,6 @@
-# NovaNuke Wiki 2.1.0
+# NovaNuke Wiki 2.4.0
 
-Standalone Markdown wiki for NovaNuke 0.4.0-rc.4 and later compatible releases.
+Standalone Markdown wiki for NovaNuke 0.4.0-beta.1 and later compatible releases.
 
 ## Install or update
 
@@ -26,3 +26,9 @@ php bin/cms module:inspect Wiki
 ```
 
 Complete archive export additionally requires PHP's ZIP extension.
+
+## 2.4.0
+
+Adds namespace `start` landing pages, polished Wiki create/edit forms, and safe module-owned namespace rename/move management with collision preflight and transactional updates.
+
+Completed namespace moves preserve historical Wiki URLs through persistent aliases. Restoring a revision changes historical content without moving the page to an old path.
