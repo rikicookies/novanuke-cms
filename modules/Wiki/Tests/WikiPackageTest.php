@@ -19,7 +19,7 @@ final class WikiPackageTest extends TestCase
     {
         $manifest = json_decode((string) file_get_contents($this->root . '/module.json'), true, 32, JSON_THROW_ON_ERROR);
         self::assertSame('wiki', $manifest['slug']);
-        self::assertSame('2.2.0', $manifest['version']);
+        self::assertSame('2.3.0', $manifest['version']);
         self::assertSame('Modules\\Wiki\\src\\WikiModule', $manifest['provider']);
         self::assertSame(['wiki.edit', 'wiki.publish'], $manifest['permissions']);
 

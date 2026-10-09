@@ -38,18 +38,33 @@ final class AdminWikiController
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         if ($guard = $this->guard('wiki.edit')) return $guard;
-        return $this->listing();
+        return $this->listing($request);
     }
 
-    private function listing(?string $importError = null, int $status = 200): Response
+    public function missingLinks(): Response
+    {
+        if ($guard = $this->guard('wiki.edit')) return $guard;
+        return Response::html($this->views->render('@wiki/admin/missing-links.twig', [
+            'missing_links' => $this->pages->missingLinks(),
+        ]));
+    }
+
+    private function listing(?Request $request = null, ?string $importError = null, int $status = 200): Response
     {
         $user = $this->auth->user();
+        $filters = $this->filters($request);
+        $result = $this->pages->adminListing(
+            $filters['page'], $filters['per_page'], $filters['status'], $filters['namespace'], $filters['q'], $filters['sort'],
+        );
         return Response::html($this->views->render('@wiki/admin/index.twig', [
-            'pages' => $this->pages->adminPages(),
-            'missing_links' => $this->pages->missingLinks(),
+            'pages' => $result['items'],
+            'result' => $result,
+            'filters' => $filters,
+            'namespaces' => $this->pages->adminNamespaces(),
+            'return_query' => $this->queryString($filters),
             'message' => $this->session->pull('wiki.message'),
             'import_error' => $importError,
             'csrf_token' => $this->csrf->token(),
@@ -127,7 +142,7 @@ final class AdminWikiController
             ], $request->ip());
             return $this->editor($draft, notice: $this->translate('admin.message.markdown_imported', 'Markdown imported into a draft. Review it before saving.'));
         } catch (RuntimeException $error) {
-            return $this->listing($this->error($error->getMessage()), 422);
+            return $this->listing($request, $this->error($error->getMessage()), 422);
         }
     }
 
@@ -170,7 +185,7 @@ final class AdminWikiController
             ));
             return Response::redirect('/admin/wiki', 303);
         } catch (RuntimeException $error) {
-            return $this->listing($this->error($error->getMessage()), 422);
+            return $this->listing($request, $this->error($error->getMessage()), 422);
         }
     }
 
@@ -252,9 +267,9 @@ final class AdminWikiController
             ], $request->ip());
             $count = count($changed);
             $this->session->put('wiki.message', $this->translate('admin.message.bulk_applied', sprintf('Bulk action applied to %d Wiki pages.', $count), ['count' => $count]));
-            return Response::redirect('/admin/wiki', 303);
+            return Response::redirect('/admin/wiki?' . $this->queryString($this->filters($request)), 303);
         } catch (RuntimeException $error) {
-            return $this->listing($this->error($error->getMessage()), 422);
+            return $this->listing($request, $this->error($error->getMessage()), 422);
         }
     }
 
@@ -445,6 +460,41 @@ final class AdminWikiController
         $ids = array_values($ids);
         sort($ids, SORT_NUMERIC);
         return $ids;
+    }
+
+    /** @return array{page:int,per_page:int,status:string,namespace:?string,q:string,sort:string} */
+    private function filters(?Request $request): array
+    {
+        $value = static fn (string $key, mixed $default = null): mixed => $request?->query($key) ?? $request?->input($key, $default);
+        $page = filter_var($value('page', 1), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+        $perPage = filter_var($value('per_page', 20), FILTER_VALIDATE_INT) ?: 20;
+        if (! in_array($perPage, [10, 20, 50, 100], true)) $perPage = 20;
+        $status = (string) ($value('status', 'all') ?? 'all');
+        if (! in_array($status, ['all', 'published', 'draft'], true)) $status = 'all';
+        $sort = (string) ($value('sort', 'path') ?? 'path');
+        if (! in_array($sort, ['title_asc', 'title_desc', 'path', 'newest', 'oldest', 'updated'], true)) $sort = 'path';
+        $q = mb_substr(trim((string) ($value('q', '') ?? '')), 0, 100);
+        $namespace = null;
+        $rawNamespace = $value('namespace');
+        if ($rawNamespace !== null && $rawNamespace !== '__all__') {
+            try {
+                $namespace = $this->input->namespace($rawNamespace);
+            } catch (RuntimeException) {
+                $namespace = null;
+            }
+        }
+        return ['page' => (int) $page, 'per_page' => $perPage, 'status' => $status, 'namespace' => $namespace, 'q' => $q, 'sort' => $sort];
+    }
+
+    /** @param array{page:int,per_page:int,status:string,namespace:?string,q:string,sort:string} $filters */
+    private function queryString(array $filters): string
+    {
+        $query = [
+            'page' => $filters['page'], 'per_page' => $filters['per_page'], 'status' => $filters['status'],
+            'q' => $filters['q'], 'sort' => $filters['sort'],
+        ];
+        if ($filters['namespace'] !== null) $query['namespace'] = $filters['namespace'];
+        return http_build_query($query, '', '&', PHP_QUERY_RFC3986);
     }
 
     private function error(string $message): string

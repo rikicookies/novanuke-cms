@@ -133,7 +133,8 @@ final class WikiModule implements ModuleInterface
         $context->router->get('/wiki/search', static fn (Request $request, Container $container): Response => $public($container)->search($request), 'wiki.search');
         $context->router->get('/wiki/attachments/{attachment}', static fn (Request $request, Container $container): Response => $public($container)->attachment($request), 'wiki.attachment');
         $context->router->get('/wiki/{path}', static fn (Request $request, Container $container): Response => $public($container)->show($request), 'wiki.show');
-        $context->router->get('/admin/wiki', static fn (Request $request, Container $container): Response => $admin($container)->index());
+        $context->router->get('/admin/wiki', static fn (Request $request, Container $container): Response => $admin($container)->index($request));
+        $context->router->get('/admin/wiki/missing-links', static fn (Request $request, Container $container): Response => $admin($container)->missingLinks());
         $context->router->get('/admin/wiki/new', static fn (Request $request, Container $container): Response => $admin($container)->create($request));
         $context->router->get('/admin/wiki/export-all', static fn (Request $request, Container $container): Response => $admin($container)->exportAll());
         $context->router->get('/admin/wiki/{id}/edit', static fn (Request $request, Container $container): Response => $admin($container)->edit($request));

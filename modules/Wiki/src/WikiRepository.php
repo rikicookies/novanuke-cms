@@ -11,6 +11,16 @@ use RuntimeException;
 
 final class WikiRepository
 {
+    /** @var array<string,string> */
+    private const ADMIN_SORTS = [
+        'title_asc' => 'w.title ASC,w.id ASC',
+        'title_desc' => 'w.title DESC,w.id DESC',
+        'path' => 'w.namespace ASC,w.slug ASC,w.id ASC',
+        'newest' => 'w.created_at DESC,w.id DESC',
+        'oldest' => 'w.created_at ASC,w.id ASC',
+        'updated' => 'w.updated_at DESC,w.id DESC',
+    ];
+
     public function __construct(
         private readonly PDO $database,
         private readonly MembershipManagerInterface $memberships,
@@ -25,8 +35,50 @@ final class WikiRepository
         return $this->database->query(
             "SELECT w.id,w.namespace,w.slug,w.title,w.status,w.audience,w.published_at,w.updated_at,u.username "
             . 'FROM wiki_pages w INNER JOIN users u ON u.id=w.author_id WHERE w.deleted_at IS NULL '
-            . 'ORDER BY w.namespace,w.slug'
+            . 'ORDER BY w.namespace,w.slug,w.id'
         )->fetchAll();
+    }
+
+    /** @return array{items:list<array<string,mixed>>,page:int,pages:int,total:int,counts:array{all:int,published:int,draft:int}} */
+    public function adminListing(int $page = 1, int $perPage = 20, string $status = 'all', ?string $namespace = null, string $search = '', string $sort = 'path'): array
+    {
+        $perPage = in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
+        $status = in_array($status, ['all', 'published', 'draft'], true) ? $status : 'all';
+        $sort = array_key_exists($sort, self::ADMIN_SORTS) ? $sort : 'path';
+        $where = ['w.deleted_at IS NULL'];
+        $params = [];
+        if ($status !== 'all') { $where[] = 'w.status=:status'; $params['status'] = $status; }
+        if ($namespace !== null) { $where[] = 'w.namespace=:namespace'; $params['namespace'] = $namespace; }
+        if ($search !== '') {
+            $like = '%' . str_replace(['=', '%', '_'], ['==', '=%', '=_'], $search) . '%';
+            $where[] = '(w.title LIKE :search_title ESCAPE \'=\' OR w.namespace LIKE :search_namespace ESCAPE \'=\' OR w.slug LIKE :search_slug ESCAPE \'=\' OR CONCAT(CASE WHEN w.namespace=\'\' THEN \'\' ELSE CONCAT(w.namespace, \':\') END,w.slug) LIKE :search_path ESCAPE \'=\')';
+            $params += ['search_title' => $like, 'search_namespace' => $like, 'search_slug' => $like, 'search_path' => $like];
+        }
+        $clause = implode(' AND ', $where);
+        $count = $this->database->prepare("SELECT COUNT(*) AS all_count,COALESCE(SUM(w.status='published'),0) AS published_count,COALESCE(SUM(w.status='draft'),0) AS draft_count FROM wiki_pages w WHERE {$clause}");
+        $count->execute($params);
+        $summary = $count->fetch() ?: ['all_count' => 0, 'published_count' => 0, 'draft_count' => 0];
+        $total = (int) $summary['all_count'];
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $pages);
+        $statement = $this->database->prepare(
+            'SELECT w.id,w.namespace,w.slug,w.title,w.status,w.audience,w.published_at,w.created_at,w.updated_at,u.username '
+            . 'FROM wiki_pages w INNER JOIN users u ON u.id=w.author_id '
+            . "WHERE {$clause} ORDER BY " . self::ADMIN_SORTS[$sort] . ' LIMIT :limit OFFSET :offset'
+        );
+        foreach ($params as $key => $value) $statement->bindValue(':' . $key, $value);
+        $statement->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $statement->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT);
+        $statement->execute();
+        return ['items' => $statement->fetchAll(), 'page' => $page, 'pages' => $pages, 'total' => $total, 'counts' => [
+            'all' => $total, 'published' => (int) $summary['published_count'], 'draft' => (int) $summary['draft_count'],
+        ]];
+    }
+
+    /** @return list<string> */
+    public function adminNamespaces(): array
+    {
+        return array_map('strval', $this->database->query('SELECT DISTINCT namespace FROM wiki_pages WHERE deleted_at IS NULL ORDER BY namespace')->fetchAll(PDO::FETCH_COLUMN));
     }
 
     /** @return list<array{namespace:string,slug:string,content:string}> */
@@ -54,7 +106,7 @@ final class WikiRepository
     {
         $pages = $this->database->query(
             "SELECT id,namespace,slug,title,audience,updated_at FROM wiki_pages WHERE status='published' "
-            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY namespace,title'
+            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY namespace,slug,id'
         )->fetchAll();
         return array_values(array_filter($pages, fn (array $page): bool => $this->canView($page, $userId)));
     }
@@ -89,7 +141,7 @@ final class WikiRepository
     {
         return $this->database->query(
             "SELECT namespace,slug,updated_at FROM wiki_pages WHERE audience='public' AND status='published' "
-            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY id'
+            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY namespace,slug,id'
         )->fetchAll();
     }
 
@@ -152,7 +204,7 @@ final class WikiRepository
     {
         $pages = $this->database->query(
             "SELECT id,namespace,slug,title,audience,content FROM wiki_pages WHERE status='published' "
-            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY title'
+            . 'AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL ORDER BY title,namespace,slug,id'
         )->fetchAll();
         $backlinks = [];
         foreach ($pages as $page) {

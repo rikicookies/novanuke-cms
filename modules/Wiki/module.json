@@ -1,7 +1,7 @@
 {
     "name": "Wiki",
     "slug": "wiki",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "api_version": "1.0",
     "description": "A lightweight Markdown wiki with namespaces and safe online editing.",
     "author": "NovaNuke Project",

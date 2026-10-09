@@ -72,7 +72,7 @@ final class WikiNavigation
             $children[$path] = ['path' => $path, 'label' => $this->label($segment)];
         }
 
-        ksort($children, SORT_NATURAL | SORT_FLAG_CASE);
+        uksort($children, static fn (string $left, string $right): int => strcasecmp($left, $right) ?: strcmp($left, $right));
 
         return [
             'pages' => $directPages,
@@ -136,14 +136,18 @@ final class WikiNavigation
             $namespace['namespaces'] = $this->normalizedNamespaces($namespace['namespaces']);
             $result[] = $namespace;
         }
-        usort($result, static fn (array $left, array $right): int => strcasecmp((string) $left['label'], (string) $right['label']));
+        usort($result, static fn (array $left, array $right): int => strcasecmp((string) $left['path'], (string) $right['path']) ?: strcmp((string) $left['path'], (string) $right['path']));
         return $result;
     }
 
     /** @param list<array<string,mixed>> $pages @return list<array<string,mixed>> */
     private function sortedPages(array $pages): array
     {
-        usort($pages, static fn (array $left, array $right): int => strcasecmp((string) $left['title'], (string) $right['title']));
+        usort($pages, static function (array $left, array $right): int {
+            $leftPath = ($left['namespace'] ?? '') === '' ? (string) $left['slug'] : $left['namespace'] . ':' . $left['slug'];
+            $rightPath = ($right['namespace'] ?? '') === '' ? (string) $right['slug'] : $right['namespace'] . ':' . $right['slug'];
+            return strcasecmp($leftPath, $rightPath) ?: strcmp($leftPath, $rightPath) ?: ((int) ($left['id'] ?? 0) <=> (int) ($right['id'] ?? 0));
+        });
         return $pages;
     }
 }
