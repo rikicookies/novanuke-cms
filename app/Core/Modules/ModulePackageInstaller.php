@@ -19,8 +19,12 @@ final class ModulePackageInstaller
     public function __construct(
         private readonly string $modulesPath,
         private readonly ModuleCompatibilityChecker $compatibility,
+        ?\Closure $rename = null,
     ) {
+        $this->rename = $rename ?? static fn (string $from, string $to): bool => rename($from, $to);
     }
+
+    private readonly \Closure $rename;
 
     /** @param array<string, array<string, mixed>> $installed */
     public function install(string $archivePath, array $installed): ModuleManifest
@@ -50,6 +54,110 @@ final class ModulePackageInstaller
 
         $this->removeDirectory($stagingRoot);
         return ModuleManifest::fromArray($package->manifest->toArray(), $destination);
+    }
+
+    /**
+     * Publish a newer package over an installed module while keeping a private
+     * recovery copy until the database update callback succeeds.
+     *
+     * @param array<string, array<string, mixed>> $installed
+     * @param callable(ModuleManifest): void $update
+     */
+    public function upgrade(string $archivePath, array $installed, callable $update): ModuleManifest
+    {
+        $package = $this->inspect($archivePath, $installed);
+        $record = $installed[$package->manifest->slug] ?? null;
+        if (! is_array($record)) {
+            throw new RuntimeException('The module is not installed.');
+        }
+        $installedVersion = (string) ($record['installed_version'] ?? '');
+        if ($installedVersion === '' || version_compare($package->manifest->version, $installedVersion, '<=')) {
+            throw new RuntimeException('Module package version must be newer than the installed module.');
+        }
+
+        $destination = $this->modulesRoot() . DIRECTORY_SEPARATOR . $package->directory;
+        if (! is_dir($destination) || is_link($destination)) {
+            throw new RuntimeException('The installed module source is missing or unsafe.');
+        }
+        $current = $this->manifest($destination, $package->directory);
+        if ($current->slug !== $package->manifest->slug || $current->provider !== $package->manifest->provider) {
+            throw new RuntimeException('The installed module source does not match the package identity.');
+        }
+
+        $updatesRoot = dirname($this->modulesRoot()) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'private' . DIRECTORY_SEPARATOR . 'module-updates';
+        $this->ensurePrivateDirectory($updatesRoot);
+        $moduleRoot = $updatesRoot . DIRECTORY_SEPARATOR . $package->manifest->slug;
+        $this->ensurePrivateDirectory($moduleRoot);
+        $lockPath = $updatesRoot . DIRECTORY_SEPARATOR . $package->manifest->slug . '.lock';
+        $lock = fopen($lockPath, 'c');
+        if (! is_resource($lock) || ! flock($lock, LOCK_EX | LOCK_NB)) {
+            if (is_resource($lock)) fclose($lock);
+            throw new RuntimeException('An update for this module is already in progress.');
+        }
+
+        $operation = $moduleRoot . DIRECTORY_SEPARATOR . 'upgrade-' . bin2hex(random_bytes(8));
+        $previous = $operation . DIRECTORY_SEPARATOR . 'previous';
+        $stagingRoot = $this->modulesRoot() . DIRECTORY_SEPARATOR . '.install-' . bin2hex(random_bytes(8));
+        $stagedModule = $stagingRoot . DIRECTORY_SEPARATOR . $package->directory;
+        $stateFile = $operation . DIRECTORY_SEPARATOR . 'operation.json';
+        $state = 'started';
+        $backupCreated = false;
+
+        try {
+            if (! mkdir($operation, 0700, true) || ! mkdir($stagingRoot, 0700)) {
+                throw new RuntimeException('Unable to create private module update workspace.');
+            }
+            $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+            $this->extract($archivePath, $stagingRoot);
+            $this->manifest($stagedModule, $package->directory);
+            $state = 'staged';
+            $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+
+            if (! ($this->rename)($destination, $previous)) {
+                throw new RuntimeException('Module source backup could not be created.');
+            }
+            $backupCreated = true;
+            $state = 'backup-created';
+            $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+
+            if (! ($this->rename)($stagedModule, $destination)) {
+                throw new RuntimeException('Module source publication failed.');
+            }
+            $state = 'source-published';
+            $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+
+            try {
+                $update($package->manifest);
+            } catch (\Throwable $error) {
+                $state = 'database-update-failed';
+                $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+                throw new RuntimeException(
+                    'Module source was published, but its database update did not complete. Keep the new source in place, keep the recovery backup, and reconcile the module migration before retrying.',
+                    0,
+                    $error,
+                );
+            }
+
+            $state = 'completed';
+            $this->writeOperationState($stateFile, $package, $installedVersion, $state);
+            $this->removeDirectory($operation);
+            return ModuleManifest::fromArray($package->manifest->toArray(), $destination);
+        } catch (\Throwable $error) {
+            if ($backupCreated && is_dir($previous) && ! is_dir($destination)) {
+                if (($this->rename)($previous, $destination)) {
+                    $this->removeDirectory($operation);
+                    throw new RuntimeException('Module source publication failed; previous source restored.', 0, $error);
+                }
+                $this->writeOperationState($stateFile, $package, $installedVersion, 'source-recovery-required');
+                throw new RuntimeException('Module source publication failed and previous source could not be restored.', 0, $error);
+            }
+            $this->removeDirectory($stagingRoot);
+            throw $error;
+        } finally {
+            $this->removeDirectory($stagingRoot);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
     }
 
     /** @param array<string, array<string, mixed>> $installed */
@@ -239,6 +347,30 @@ final class ModulePackageInstaller
             throw new RuntimeException('Unable to resolve the modules directory.');
         }
         return $real;
+    }
+
+    private function ensurePrivateDirectory(string $path): void
+    {
+        if (is_link($path) || (file_exists($path) && ! is_dir($path))) {
+            throw new RuntimeException('Private module update storage is unsafe.');
+        }
+        if (! is_dir($path) && ! mkdir($path, 0700, true)) {
+            throw new RuntimeException('Unable to create private module update storage.');
+        }
+    }
+
+    private function writeOperationState(string $path, ModulePackage $package, string $fromVersion, string $state): void
+    {
+        $payload = [
+            'slug' => $package->manifest->slug,
+            'from_version' => $fromVersion,
+            'to_version' => $package->manifest->version,
+            'state' => $state,
+            'updated_at' => gmdate(DATE_ATOM),
+        ];
+        if (file_put_contents($path, json_encode($payload, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . PHP_EOL, LOCK_EX) === false) {
+            throw new RuntimeException('Unable to record module update state.');
+        }
     }
 
     private function removeDirectory(string $path): void

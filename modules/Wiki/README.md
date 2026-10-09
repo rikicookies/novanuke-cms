@@ -4,7 +4,7 @@ Standalone Markdown wiki for NovaNuke 0.4.0-beta.1 and later compatible releases
 
 ## Install or update
 
-Upload the ZIP in **Admin → Modules → Install module package**. When updating an existing installation, disable Wiki, move the old `modules/Wiki` directory outside the project, upload this package, then choose **Update** and **Enable**.
+Upload the ZIP in **Admin → Modules → Install module package**. For an existing installation, the package flow validates the newer version, stages it, preserves the previous source in private recovery storage, and performs the normal update lifecycle. Keep a site and database backup before updating; do not uninstall Wiki or manually replace its directory. Review migration status after the update and enable the module only after the update result is confirmed.
 
 Do not uninstall the module when preserving existing pages, revisions, comments, or attachments. Wiki records remain in the database and private attachments remain under `storage/private/wiki`.
 

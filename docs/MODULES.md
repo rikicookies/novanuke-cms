@@ -216,9 +216,11 @@ For an on-disk or uploaded package, the Admin Modules flow:
 4. Records the installed module and version.
 5. Enables the module separately.
 
-Uploading a ZIP alone does not run migrations or enable routes. The package installer stages extraction, rejects unsafe paths and symlinks, requires one top-level module directory, and publishes the package atomically.
+Uploading a new-module ZIP alone does not run migrations or enable routes. The package installer stages extraction, rejects unsafe paths and symlinks, requires one top-level module directory, and publishes the package atomically.
 
-Updates require a newer manifest version, rerun module migrations, refresh permissions and preserve the installed module record. Enabling checks dependencies and then activates the provider lifecycle. Disabling removes the module from the enabled boot set without deleting its data. A module with enabled dependents cannot be disabled.
+When an uploaded package matches an installed module, NovaNuke requires a strictly newer version and performs a controlled update: it validates and extracts into staging, keeps the previous source in private recovery storage, swaps the source directory, then runs the normal module update lifecycle. Permissions, migration history, the module registry and existing module data are preserved. The filesystem swap and database update are not one atomic transaction. If the database update fails after publication, the new source remains in place with its private recovery backup; inspect `migrate:status` and use the documented `migrate:recover --module=slug` flow before retrying. Do not restore the old source after migrations have started unless the database has also been safely restored to a compatible state.
+
+Enabling checks dependencies and then activates the provider lifecycle. Disabling removes the module from the enabled boot set without deleting its data. A module with enabled dependents cannot be disabled.
 
 Useful read-only checks are:
 

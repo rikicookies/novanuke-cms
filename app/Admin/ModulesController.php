@@ -11,6 +11,7 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\I18n\Translator;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\Modules\ModuleManager;
+use NovaNuke\Core\Modules\ModuleManifest;
 use NovaNuke\Core\Modules\ModulePackageInstaller;
 use NovaNuke\Core\Modules\ModulePackageUploadValidator;
 use NovaNuke\Core\Modules\ModuleRepository;
@@ -48,15 +49,27 @@ final class ModulesController
 
         try {
             $path = $this->uploads->validate($request->file('module_package'));
-            $manifest = $this->packages->install($path, $this->moduleRepository->all());
-            if (isset($this->moduleRepository->all()[$manifest->slug])) {
+            $installed = $this->moduleRepository->all();
+            $package = $this->packages->inspect($path, $installed);
+            if (isset($installed[$package->manifest->slug])) {
+                $manifest = $this->packages->upgrade($path, $installed, function (ModuleManifest $manifest): void {
+                    $this->modules->update($manifest->slug);
+                });
+                $message = 'admin.modules.message.package_updated';
+            } else {
+                $manifest = $this->packages->install($path, $installed);
+                $message = 'admin.modules.message.package_uploaded';
+            }
+            if (isset($installed[$manifest->slug])) {
                 $this->moduleRepository->clearError($manifest->slug);
             }
             $actor = $this->auth->user();
             $this->activity->log((int) $actor['id'], 'module.package.uploaded', 'module', $manifest->slug, [
                 'version' => $manifest->version,
             ], $request->ip());
-            return $this->view($this->translate('admin.modules.message.package_uploaded', 'Module package uploaded. Review it below, then install and enable it.'));
+            return $this->view($this->translate($message, $message === 'admin.modules.message.package_updated'
+                ? 'Module package updated. Database migrations and permissions were processed; review the module state before enabling it.'
+                : 'Module package uploaded. Review it below, then install and enable it.'));
         } catch (RuntimeException|InvalidArgumentException $error) {
             return $this->view(null, $this->packageError($error->getMessage()), 422);
         }
@@ -178,8 +191,17 @@ final class ModulesController
             'The uploaded module package is not a valid temporary file.' => 'package_temporary',
             'Module package must be a non-empty ZIP no larger than 50 MB.' => 'package_size',
             'The uploaded file is not a ZIP package.' => 'package_content',
+            'Module package version must be newer than the installed module.' => 'package_version',
+            'The installed module source does not match the package identity.' => 'package_identity',
+            'An update for this module is already in progress.' => 'package_update_in_progress',
+            'Module source publication failed; previous source restored.' => 'package_source_swap',
+            'Module source publication failed and previous source could not be restored.' => 'package_source_recovery',
         ];
-        return isset($keys[$message]) ? $this->translate('admin.modules.error.' . $keys[$message], $message) : $message;
+        if (isset($keys[$message])) return $this->translate('admin.modules.error.' . $keys[$message], $message);
+        if (str_starts_with($message, 'Module source was published, but its database update did not complete.')) {
+            return $this->translate('admin.modules.error.package_upgrade_failed', 'The module source was updated, but its database update did not complete. Review migration status and recovery before retrying.');
+        }
+        return $message;
     }
 
     private function translate(string $key, string $fallback): string
