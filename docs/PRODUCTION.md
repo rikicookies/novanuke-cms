@@ -100,7 +100,7 @@ php bin/cms cache:clear
 
 The clear command is restricted to `storage/cache`, preserves the cache root and resets OPcache when PHP permits it.
 
-Run the data-retention command regularly after first checking its dry-run output. See `docs/MAINTENANCE.md` for Laragon, cron and shared-hosting examples.
+Run the data-retention command regularly after first checking its dry-run output. The maintenance behavior and cache handling are described in this document's [Maintenance and cache](#maintenance-and-cache) section; backup scheduling and retention guidance is in [BACKUPS.md](BACKUPS.md).
 
 For local download storage, run `php bin/cms downloads:orphans` after backups. Use `--delete` only after reviewing the eligible count; new files receive a 24-hour grace period.
 
@@ -125,4 +125,4 @@ php bin/cms mail:check
 php bin/cms mail:acceptance
 ```
 
-`mail:check` checks the selected transport and SMTP configuration structure without sending a message. `production:check` requires SMTP and fails when `MAIL_MAILER=log`. A structurally valid SMTP configuration is still not delivery evidence: `mail:acceptance` remains `MANUAL REQUIRED / NOT VERIFIED` until registration verification, password reset, and email-change verification have each been exercised on the production-like host and explicitly recorded. See `docs/MAIL.md` and `docs/RC_ACCEPTANCE.md`.
+`mail:check` checks the selected transport and SMTP configuration structure without sending a message. `production:check` requires SMTP and fails when `MAIL_MAILER=log`. A structurally valid SMTP configuration is still not delivery evidence: `mail:acceptance` remains `MANUAL REQUIRED / NOT VERIFIED` until registration verification, password reset, and email-change verification have each been exercised on the production-like host and explicitly recorded. See [MAIL.md](MAIL.md) for transport details and [CLEAN_INSTALL_CHECKLIST.md](CLEAN_INSTALL_CHECKLIST.md) for the acceptance baseline.

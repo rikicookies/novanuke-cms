@@ -84,4 +84,4 @@ After extraction, continue with `release:check`, `migrate:status`, `production:c
 
 `rc:check` is a database-independent source-package gate that rejects local `.env`, installation locks, runtime logs/cache/backups, stale release metadata and incomplete RC documentation.
 
-The complete Release Candidate acceptance matrix is in `docs/RC_ACCEPTANCE.md`. PHPUnit/distribution checks are necessary but do not replace fresh-install, real-upgrade, restore, SMTP and production-host acceptance.
+The [clean-install checklist](CLEAN_INSTALL_CHECKLIST.md) is the current acceptance baseline for a fresh Release Candidate installation. PHPUnit and distribution checks are necessary but do not replace fresh-install, real-upgrade, restore, SMTP and production-host acceptance.
