@@ -44,6 +44,33 @@ $rootPath = dirname(__DIR__);
 require_once $rootPath . '/vendor/autoload.php';
 $supportedUpgradeSources = [];
 
+/** Read a narrowly-scoped secret file; the passphrase never appears in argv. */
+function backupPassphraseFile(?string $path): ?string
+{
+    if ($path === null) return null;
+    if ($path === '' || ! is_file($path) || is_link($path) || ! is_readable($path)) {
+        throw new RuntimeException('Backup passphrase file is not a readable regular file.');
+    }
+    if (PHP_OS_FAMILY !== 'Windows') {
+        $permissions = fileperms($path);
+        if ($permissions !== false && (($permissions & 0077) !== 0)) throw new RuntimeException('Backup passphrase file must be owner-only.');
+    }
+    $value = file_get_contents($path);
+    if (! is_string($value) || strlen($value) > 4096) throw new RuntimeException('Backup passphrase file is missing or too large.');
+    return rtrim($value, "\r\n");
+}
+
+function backupPassphraseArgument(array $arguments): ?string
+{
+    $path = null;
+    foreach ($arguments as $argument) {
+        if (str_starts_with($argument, '--passphrase-file=')) {
+            if ($path !== null) throw new RuntimeException('Specify only one backup passphrase file.');
+            $path = substr($argument, strlen('--passphrase-file='));
+        }
+    }
+    return backupPassphraseFile($path);
+}
 
 if ($command === 'rc:check') {
     $checks=(new ReleaseCandidateChecklist($rootPath))->run();
@@ -153,14 +180,18 @@ if ($command === 'backup:files') {
 }
 
 if ($command === 'backup:verify') {
-    if (count($argv) > 3) {
-        fwrite(STDERR, "Usage: php bin/cms backup:verify [MANIFEST]\n");
+    $arguments = array_slice($argv, 2);
+    $manifests = array_values(array_filter($arguments, static fn (string $argument): bool => ! str_starts_with($argument, '--passphrase-file=')));
+    $manifest = $manifests[0] ?? null;
+    if (count($manifests) > 1 || count($arguments) > 2) {
+        fwrite(STDERR, "Usage: php bin/cms backup:verify [MANIFEST] [--passphrase-file=PATH]\n");
         exit(2);
     }
+    try { $passphrase = backupPassphraseArgument($arguments); } catch (Throwable $error) { fwrite(STDERR, "Backup verification failed: {$error->getMessage()}\n"); exit(1); }
     $verifier = new BackupVerifier($rootPath . '/storage/private/backups');
-    if (isset($argv[2])) {
+    if ($manifest !== null) {
         try {
-            $verified = $verifier->verifyManifest((string) $argv[2]);
+            $verified = $verifier->verifyManifest((string) $manifest, false, $passphrase);
             fwrite(STDOUT, "[PASS] Backup set {$verified['manifest']['backup_set_id']}: {$verified['path']}\n");
             exit(0);
         } catch (Throwable $error) {
@@ -168,7 +199,7 @@ if ($command === 'backup:verify') {
             exit(1);
         }
     }
-    $results = $verifier->verifyLatest();
+    $results = $verifier->verifyLatest($passphrase);
     $passed = true;
     foreach ($results as $result) {
         $passed = $passed && $result['passed'];
@@ -180,11 +211,14 @@ if ($command === 'backup:verify') {
 
 if ($command === 'backup:status') {
     $arguments=array_slice($argv,2);
-    if($arguments!==[]&&$arguments!==['--json']){
-        fwrite(STDERR,"Usage: php bin/cms backup:status [--json]\n"); exit(2);
+    $json=in_array('--json',$arguments,true);
+    $passphraseArgument=array_values(array_filter($arguments,static fn(string $argument):bool=>$argument!=='--json'));
+    if(count($passphraseArgument)>1||($passphraseArgument!==[]&&!str_starts_with($passphraseArgument[0],'--passphrase-file='))){
+        fwrite(STDERR,"Usage: php bin/cms backup:status [--json] [--passphrase-file=PATH]\n"); exit(2);
     }
-    $items=(new BackupSetStatus($rootPath.'/storage/private/backups'))->inspect();
-    if($arguments===['--json']){
+    try{$passphrase=backupPassphraseArgument($passphraseArgument);}catch(Throwable $error){fwrite(STDERR,"Backup status failed: {$error->getMessage()}\n");exit(1);}
+    $items=(new BackupSetStatus($rootPath.'/storage/private/backups'))->inspect($passphrase);
+    if($json){
         fwrite(STDOUT,json_encode($items,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n"); exit(0);
     }
     if($items===[]){ fwrite(STDOUT,"No manifest-backed backup sets found.\n"); exit(1); }
@@ -368,12 +402,14 @@ $application = require $rootPath . '/bootstrap/app.php';
 
 
 if ($command === 'backup:create') {
-    if (count($argv) !== 2) {
-        fwrite(STDERR, "Usage: php bin/cms backup:create\n");
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) > 1 || ($arguments !== [] && ! str_starts_with($arguments[0], '--passphrase-file='))) {
+        fwrite(STDERR, "Usage: php bin/cms backup:create [--passphrase-file=PATH]\n");
         exit(2);
     }
     try {
-        $set = $application->container()->get(BackupSetCoordinator::class)->create();
+        $passphrase = backupPassphraseArgument($arguments);
+        $set = $application->container()->get(BackupSetCoordinator::class)->create($passphrase);
         fwrite(STDOUT, "Backup set created: {$set['backup_set_id']}\n");
         fwrite(STDOUT, "Manifest: {$set['manifest']}\n");
         fwrite(STDOUT, "Database: {$set['database']}\n");
@@ -388,7 +424,9 @@ if ($command === 'backup:create') {
 
 if ($command === 'backup:restore-check') {
     try {
-        $checks = $application->container()->get(BackupRecoveryCheck::class)->run();
+        $arguments = array_slice($argv, 2);
+        if (count($arguments) > 1 || ($arguments !== [] && ! str_starts_with($arguments[0], '--passphrase-file='))) throw new RuntimeException('Usage: php bin/cms backup:restore-check [--passphrase-file=PATH]');
+        $checks = $application->container()->get(BackupRecoveryCheck::class)->run(backupPassphraseArgument($arguments));
         $passed = true;
         fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " backup recovery check\n\n");
         foreach ($checks as $check) {

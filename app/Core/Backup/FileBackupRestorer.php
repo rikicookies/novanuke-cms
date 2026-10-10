@@ -14,10 +14,21 @@ final class FileBackupRestorer
     }
 
     /** @return array{files:int,bytes:int} */
-    public function restore(string $archive, string $destination): array
+    public function restore(string $archive, string $destination, ?string $passphrase = null): array
     {
-        $verified=$this->verifier->verifyFileArchive($archive);
-        $this->prepareDestination($destination);
+        $temporary = null;
+        if (BackupEncryption::isEncryptedFile($archive)) {
+            if ($passphrase === null) throw new RuntimeException('An encryption passphrase is required to restore this backup artifact.');
+            $temporary = (new BackupEncryption())->decryptToTemp($archive, dirname($archive), $passphrase);
+            $archive = $temporary['path'];
+        }
+        try {
+            $verified=$this->verifier->verifyFileArchive($archive);
+            $this->prepareDestination($destination);
+        } catch (Throwable $error) {
+            if ($temporary !== null) @unlink($temporary['path']);
+            throw $error;
+        }
 
         $stream=fopen($archive,'rb');
         if($stream===false) throw new RuntimeException('File backup is not readable.');
@@ -86,6 +97,7 @@ final class FileBackupRestorer
             throw $error;
         }finally{
             fclose($stream);
+            if ($temporary !== null) @unlink($temporary['path']);
         }
     }
 

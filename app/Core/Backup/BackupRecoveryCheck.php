@@ -17,10 +17,10 @@ final class BackupRecoveryCheck
     }
 
     /** @return list<array{name:string,passed:bool,detail:string}> */
-    public function run(): array
+    public function run(?string $passphrase = null): array
     {
         $checks = [];
-        $results = $this->verifier->verifyLatest();
+        $results = $this->verifier->verifyLatest($passphrase);
         $byType = [];
         foreach ($results as $result) $byType[$result['type']] = $result;
 
@@ -74,7 +74,13 @@ final class BackupRecoveryCheck
             ];
         } else {
             if ($databasePath === '') $databasePath = rtrim($this->backupDirectory, '/\\') . DIRECTORY_SEPARATOR . $databaseFilename;
+            $temporary = null;
             try {
+                if (BackupEncryption::isEncryptedFile($databasePath)) {
+                    if ($passphrase === null) throw new \RuntimeException('An encryption passphrase is required for disposable database restore.');
+                    $temporary = (new BackupEncryption())->decryptToTemp($databasePath, dirname($databasePath), $passphrase);
+                    $databasePath = $temporary['path'];
+                }
                 $restored = $this->databaseRestore->verify($databasePath);
                 $checks[] = [
                     'name' => 'Disposable database restore',
@@ -83,6 +89,8 @@ final class BackupRecoveryCheck
                 ];
             } catch (Throwable $error) {
                 $checks[] = ['name' => 'Disposable database restore', 'passed' => false, 'detail' => $error->getMessage()];
+            } finally {
+                if ($temporary !== null) @unlink($temporary['path']);
             }
         }
 

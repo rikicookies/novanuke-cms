@@ -15,7 +15,7 @@ final class BackupVerifier
     }
 
     /** @return list<array{type:string,passed:bool,file:string,detail:string}> */
-    public function verifyLatest(): array
+    public function verifyLatest(?string $passphrase = null): array
     {
         $incomplete = glob(rtrim($this->directory, '/\\') . DIRECTORY_SEPARATOR . '.incomplete-set-*', GLOB_ONLYDIR) ?: [];
         if ($incomplete !== []) {
@@ -27,7 +27,7 @@ final class BackupVerifier
             ];
         }
         $manifestPath = $this->latestManifest();
-        if ($manifestPath !== null) return $this->verifyManifestResults($manifestPath);
+        if ($manifestPath !== null) return $this->verifyManifestResults($manifestPath, $passphrase);
         $databasePath = $this->latest('novanuke-db-*.sql');
         $filePath = $this->latest('novanuke-files-*.tar');
         $database = $this->verifyCandidate('database', $databasePath, $this->verifyDatabase(...));
@@ -37,7 +37,7 @@ final class BackupVerifier
     }
 
     /** @return array<string,mixed> */
-    public function verifyManifest(string $manifestPath, bool $allowStaging = false): array
+    public function verifyManifest(string $manifestPath, bool $allowStaging = false, ?string $passphrase = null): array
     {
         $this->assertRegularFile($manifestPath);
         $raw = file_get_contents($manifestPath);
@@ -72,23 +72,40 @@ final class BackupVerifier
                 throw new RuntimeException("Backup-set {$type} component metadata is invalid.");
             }
             $path = dirname($manifestPath) . DIRECTORY_SEPARATOR . $component['name'];
-            $actual = $type === 'database' ? $this->verifyDatabase($path) : $this->verifyFileArchive($path);
-            $artifactBytes = (int) ($actual['artifact_bytes'] ?? $actual['bytes']);
-            if ($artifactBytes !== $component['bytes'] || ! hash_equals($actual['sha256'], $component['sha256'])) {
-                throw new RuntimeException("Backup-set {$type} component size or checksum does not match.");
+            if (! is_file($path) || is_link($path)) throw new RuntimeException("Backup-set {$type} component is unavailable.");
+            $artifactBytes = filesize($path);
+            $artifactSha256 = hash_file('sha256', $path);
+            if ($artifactBytes === false || $artifactSha256 === false || $artifactBytes !== $component['bytes'] || ! hash_equals($artifactSha256, $component['sha256'])) {
+                throw new RuntimeException("Backup-set {$type} artifact size or checksum does not match.");
+            }
+            $temporary = null;
+            if (($component['encrypted'] ?? false) === true) {
+                if ($passphrase === null) throw new RuntimeException('An encryption passphrase is required to verify this backup set.');
+                $temporary = (new BackupEncryption())->decryptToTemp($path, dirname($manifestPath), $passphrase);
+                $path = $temporary['path'];
+            }
+            try {
+                $actual = $type === 'database' ? $this->verifyDatabase($path) : $this->verifyFileArchive($path);
+            } finally {
+                if ($temporary !== null) @unlink($temporary['path']);
+            }
+            if (($component['encrypted'] ?? false) === true) {
+                if (($component['plaintext_bytes'] ?? null) !== $actual['bytes'] || ! hash_equals((string) ($component['plaintext_sha256'] ?? ''), $actual['sha256'])) {
+                    throw new RuntimeException("Backup-set {$type} plaintext checksum does not match.");
+                }
             }
             if (! hash_equals($actual['backup_set'], $setId)) throw new RuntimeException("Backup-set {$type} identifier does not match.");
-            $actual['path'] = $path;
+            $actual['path'] = dirname($manifestPath) . DIRECTORY_SEPARATOR . $component['name'];
             $verified[$type] = $actual;
         }
         return ['manifest' => $manifest, 'database' => $verified['database'], 'files' => $verified['files'], 'path' => $manifestPath];
     }
 
     /** @return list<array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>}> */
-    private function verifyManifestResults(string $manifestPath): array
+    private function verifyManifestResults(string $manifestPath, ?string $passphrase = null): array
     {
         try {
-            $set = $this->verifyManifest($manifestPath);
+            $set = $this->verifyManifest($manifestPath, false, $passphrase);
             $database = ['type'=>'database','passed'=>true,'file'=>basename($set['database']['path']),'detail'=>"1 file(s), {$set['database']['bytes']} source byte(s), SHA-256 {$set['database']['sha256']}",'metadata'=>$set['database']];
             $files = ['type'=>'files','passed'=>true,'file'=>basename($set['files']['path']),'detail'=>"{$set['files']['files']} file(s), {$set['files']['bytes']} source byte(s), SHA-256 {$set['files']['sha256']}",'metadata'=>$set['files']];
             $pair = ['type'=>'pair','passed'=>true,'file'=>basename($manifestPath),'detail'=>'Verified complete backup set '.$set['manifest']['backup_set_id'].'.','metadata'=>['backup_set'=>$set['manifest']['backup_set_id'],'manifest'=>$manifestPath]];

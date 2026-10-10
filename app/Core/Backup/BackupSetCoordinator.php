@@ -21,7 +21,7 @@ final class BackupSetCoordinator
     }
 
     /** @return array{backup_set_id:string,manifest:string,database:string,files:string} */
-    public function create(): array
+    public function create(?string $passphrase = null): array
     {
         $setId = BackupSetId::generate();
         $startedAt = gmdate(DATE_ATOM);
@@ -55,6 +55,23 @@ final class BackupSetCoordinator
                 throw new RuntimeException('Backup components do not belong to the requested backup set.');
             }
 
+            $encryption = null;
+            if ($passphrase !== null) {
+                $crypt = new BackupEncryption();
+                $encryptedDatabasePath = $staging . DIRECTORY_SEPARATOR . basename($databasePath) . '.nnb';
+                $encryptedFilesPath = $staging . DIRECTORY_SEPARATOR . basename($files['path']) . '.nnb';
+                $databaseEnvelope = $crypt->encrypt($databasePath, $encryptedDatabasePath, $passphrase);
+                $filesEnvelope = $crypt->encrypt($files['path'], $encryptedFilesPath, $passphrase);
+                @unlink($databasePath);
+                @unlink($files['path']);
+                $databasePath = $encryptedDatabasePath;
+                $files['path'] = $encryptedFilesPath;
+                $encryption = [
+                    'database' => $this->encryptedComponent($databasePath, $database, $databaseEnvelope),
+                    'files' => $this->encryptedComponent($files['path'], $archive, $filesEnvelope),
+                ];
+            }
+
             $this->inject('before_manifest_publish');
             $manifestPath = $staging . DIRECTORY_SEPARATOR . 'manifest.json';
             $manifest = [
@@ -76,8 +93,8 @@ final class BackupSetCoordinator
                     'snapshot' => $database['snapshot'],
                 ],
                 'components' => [
-                    'database' => $this->component($databasePath, $database['bytes'], $database['sha256']),
-                    'files' => $this->component($files['path'], filesize($files['path']), $files['sha256']),
+                    'database' => $encryption['database'] ?? $this->component($databasePath, $database['bytes'], $database['sha256']),
+                    'files' => $encryption['files'] ?? $this->component($files['path'], filesize($files['path']), $files['sha256']),
                 ],
                 'included' => ['database', 'modules', 'themes', 'public/uploads', 'storage/private/avatars', 'storage/private/downloads', 'storage/private/wiki'],
                 'excluded' => ['.env', 'vendor', '.git', 'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private/backups'],
@@ -91,7 +108,7 @@ final class BackupSetCoordinator
             if (! rename($manifestPath . '.part', $manifestPath)) {
                 throw new RuntimeException('Unable to finalize backup-set manifest.');
             }
-            (new BackupVerifier($staging))->verifyManifest($manifestPath, true);
+            (new BackupVerifier($staging))->verifyManifest($manifestPath, true, $passphrase);
             if (! rename($staging, $final)) {
                 throw new RuntimeException('Unable to publish the completed backup set.');
             }
@@ -116,6 +133,24 @@ final class BackupSetCoordinator
     {
         if ($bytes === false) throw new RuntimeException('Unable to inspect a backup component.');
         return ['name' => basename($path), 'bytes' => $bytes, 'sha256' => $sha256, 'backup_set_id' => $this->setIdFromPath($path)];
+    }
+
+    /** @param array<string,mixed> $plain @param array<string,mixed> $envelope @return array<string,mixed> */
+    private function encryptedComponent(string $path, array $plain, array $envelope): array
+    {
+        $bytes = filesize($path);
+        $sha256 = hash_file('sha256', $path);
+        if ($bytes === false || $sha256 === false) throw new RuntimeException('Unable to inspect encrypted backup artifact.');
+        return [
+            'name' => basename($path),
+            'bytes' => $bytes,
+            'sha256' => $sha256,
+            'backup_set_id' => $plain['backup_set'],
+            'encrypted' => true,
+            'plaintext_bytes' => $plain['bytes'],
+            'plaintext_sha256' => $plain['sha256'],
+            'envelope' => $envelope,
+        ];
     }
 
     private function setIdFromPath(string $path): string

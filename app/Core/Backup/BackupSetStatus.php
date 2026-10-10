@@ -11,7 +11,7 @@ final class BackupSetStatus
     public function __construct(private readonly string $directory) {}
 
     /** @return list<array<string,mixed>> */
-    public function inspect(): array
+    public function inspect(?string $passphrase = null): array
     {
         if (! is_dir($this->directory) || is_link($this->directory)) return [];
         $items = [];
@@ -25,7 +25,7 @@ final class BackupSetStatus
             $record = ['backup_set_id'=>str_replace('.incomplete-','',$name),'path'=>$manifest,'status'=>'incomplete','detail'=>'Complete manifest is missing.'];
             if (! str_starts_with($name, '.incomplete-') && is_file($manifest) && ! is_link($manifest)) {
                 try {
-                    $verified=(new BackupVerifier($this->directory))->verifyManifest($manifest);
+                    $verified=(new BackupVerifier($this->directory))->verifyManifest($manifest, false, $passphrase);
                     $data=$verified['manifest'];
                     $record=[
                         'backup_set_id'=>$data['backup_set_id'], 'path'=>$manifest, 'status'=>'valid',
