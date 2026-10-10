@@ -101,5 +101,7 @@ final class NewsModule implements ModuleInterface
         $context->router->post('/admin/news/taxonomy/{type}', static fn (Request $request, Container $container): Response => $admin($container)->taxonomy($request));
         $context->router->get('/admin/news/taxonomy/{type}/{id}/edit', static fn (Request $request, Container $container): Response => $admin($container)->taxonomyEdit($request));
         $context->router->post('/admin/news/taxonomy/{type}/{id}/update', static fn (Request $request, Container $container): Response => $admin($container)->taxonomyUpdate($request));
+        $context->router->get('/admin/news/taxonomy/{type}/{id}/delete', static fn (Request $request, Container $container): Response => $admin($container)->taxonomyDeleteConfirm($request));
+        $context->router->post('/admin/news/taxonomy/{type}/{id}/delete', static fn (Request $request, Container $container): Response => $admin($container)->taxonomyDelete($request));
     }
 }

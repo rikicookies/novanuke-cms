@@ -1,0 +1,17 @@
+{% extends "@admin-core/layouts/admin.twig" %}
+{% block title %}{{ trans('news::admin.delete_taxonomy') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('news::title'), url: '/admin/news'}, {label: trans('news::admin.delete_taxonomy')}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('news::admin.eyebrow'), title: is_category ? trans('news::admin.delete_category') : trans('news::admin.delete_topic'), description: trans('news::admin.delete_taxonomy_help'), actions: [{label: trans('news::admin.back'), url: '/admin/news', icon:'ph-arrow-left'}]} only %}
+{% if error %}<div class="alert alert-danger alert-icon-start"><span class="alert-icon bg-danger text-white"><i class="ph-warning"></i></span>{{ error }}</div>{% endif %}
+<div class="card nn-taxonomy-card"><div class="card-body p-4">
+<h2 class="h5">{{ taxonomy.name }}</h2><p class="text-muted mb-3">{{ taxonomy.slug }}</p>
+<div class="alert alert-warning">{{ trans('news::admin.delete_warning') }}</div>
+{% if is_category and child_count > 0 %}<div class="alert alert-danger">{{ trans('news::admin.delete_children_warning', {count: child_count}) }}</div>{% endif %}
+<p>{{ trans('news::admin.associated_articles', {count: article_count}) }}</p>
+<form method="post" action="/admin/news/taxonomy/{{ type }}/{{ taxonomy.id }}/delete">
+<input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="confirm_delete" value="1"><input type="hidden" name="destination_type" value="{{ type }}">
+{% if article_count > 0 %}<div class="mb-3"><label class="form-label" for="taxonomy-destination">{{ trans('news::admin.reassign_articles') }}</label><select id="taxonomy-destination" class="form-select" name="destination_id"><option value="">{{ trans('news::admin.choose_destination') }}</option>{% for destination in destinations %}<option value="{{ destination.id }}"{{ submitted.destination_id|default('') == destination.id ? ' selected' : '' }}>{{ destination.name }} ({{ destination.slug }})</option>{% endfor %}</select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="taxonomy-unclassify" name="unclassify" value="1"{{ submitted.unclassify|default(false) ? ' checked' : '' }}><label class="form-check-label" for="taxonomy-unclassify">{{ trans('news::admin.leave_unclassified') }}</label></div>{% endif %}
+<div class="d-flex flex-wrap gap-2"><button class="btn btn-danger" type="submit"{{ child_count > 0 ? ' disabled' : '' }}>{{ trans('news::admin.confirm_delete_taxonomy') }}</button><a class="btn btn-light border" href="/admin/news">{{ trans('news::admin.cancel') }}</a></div>
+</form></div></div>
+{% endblock %}

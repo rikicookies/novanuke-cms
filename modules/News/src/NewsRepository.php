@@ -189,6 +189,80 @@ final class NewsRepository
         }
     }
 
+    public function taxonomyArticleCount(string $type, int $id): int
+    {
+        $column = $type === 'category' ? 'category_id' : ($type === 'topic' ? 'topic_id' : null);
+        if ($column === null) throw new RuntimeException('Invalid taxonomy type.');
+        $statement = $this->database->prepare("SELECT COUNT(*) FROM news_articles WHERE {$column}=:id");
+        $statement->execute(['id' => $id]);
+
+        return (int) $statement->fetchColumn();
+    }
+
+    public function taxonomyChildCount(string $type, int $id): int
+    {
+        if ($type !== 'category') throw new RuntimeException('Invalid taxonomy type.');
+        $statement = $this->database->prepare('SELECT COUNT(*) FROM news_categories WHERE parent_id=:id');
+        $statement->execute(['id' => $id]);
+
+        return (int) $statement->fetchColumn();
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function taxonomyDeleteDestinations(string $type, int $sourceId): array
+    {
+        $table = $this->taxonomyTable($type);
+        $statement = $this->database->prepare("SELECT id,name,slug FROM {$table} WHERE id<>:id ORDER BY name,id");
+        $statement->execute(['id' => $sourceId]);
+
+        return $statement->fetchAll();
+    }
+
+    public function deleteTaxonomy(string $type, int $sourceId, ?int $destinationId, bool $unclassify): void
+    {
+        $table = $this->taxonomyTable($type);
+        $column = $type === 'category' ? 'category_id' : 'topic_id';
+        if ($destinationId !== null && $destinationId === $sourceId) throw new RuntimeException('A taxonomy cannot be reassigned to itself.');
+
+        $this->database->beginTransaction();
+        try {
+            $taxonomyIds = [$sourceId];
+            if ($destinationId !== null) $taxonomyIds[] = $destinationId;
+            sort($taxonomyIds, SORT_NUMERIC);
+            $marks = implode(',', array_fill(0, count($taxonomyIds), '?'));
+            $lock = $this->database->prepare("SELECT id FROM {$table} WHERE id IN ({$marks}) ORDER BY id FOR UPDATE");
+            $lock->execute($taxonomyIds);
+            $lockedIds = array_map('intval', $lock->fetchAll(PDO::FETCH_COLUMN));
+            if (! in_array($sourceId, $lockedIds, true)) throw new RuntimeException('News taxonomy not found.');
+            if ($destinationId !== null && ! in_array($destinationId, $lockedIds, true)) throw new RuntimeException('Selected taxonomy destination does not exist.');
+
+            if ($type === 'category') {
+                $children = $this->database->prepare('SELECT id FROM news_categories WHERE parent_id=:id ORDER BY id FOR UPDATE');
+                $children->execute(['id' => $sourceId]);
+                if ($children->fetchColumn() !== false) throw new RuntimeException('Move or remove child categories before deleting this category.');
+            }
+            $articles = $this->database->prepare("SELECT id FROM news_articles WHERE {$column}=:id ORDER BY id FOR UPDATE");
+            $articles->execute(['id' => $sourceId]);
+            $articleIds = array_map('intval', $articles->fetchAll(PDO::FETCH_COLUMN));
+            if ($articleIds !== [] && $destinationId === null && ! $unclassify) {
+                throw new RuntimeException('Choose a destination or explicitly leave articles unclassified.');
+            }
+            if ($articleIds !== []) {
+                $marks = implode(',', array_fill(0, count($articleIds), '?'));
+                $parameters = $destinationId === null ? [null, ...$articleIds] : [$destinationId, ...$articleIds];
+                $update = $this->database->prepare("UPDATE news_articles SET {$column}=?,updated_at=UTC_TIMESTAMP() WHERE id IN ({$marks})");
+                $update->execute($parameters);
+            }
+            $delete = $this->database->prepare("DELETE FROM {$table} WHERE id=:id");
+            $delete->execute(['id' => $sourceId]);
+            if ($delete->rowCount() !== 1) throw new RuntimeException('News taxonomy not found.');
+            $this->database->commit();
+        } catch (\Throwable $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            throw $error;
+        }
+    }
+
     private function taxonomyTable(string $type): string
     {
         $table = $type === 'category' ? 'news_categories' : ($type === 'topic' ? 'news_topics' : null);

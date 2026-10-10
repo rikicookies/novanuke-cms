@@ -186,6 +186,43 @@ final class AdminNewsController
         }
     }
 
+    public function taxonomyDeleteConfirm(Request $request): Response
+    {
+        if ($guard = $this->guard('news.edit')) return $guard;
+        try {
+            $type = $this->taxonomyType($request);
+            $taxonomy = $this->news->taxonomy($type, $this->routeId($request));
+            if ($taxonomy === null) return Response::html($this->translate('admin.error.taxonomy_not_found', 'News taxonomy not found.'), 404);
+            return $this->taxonomyDeleteEditor($type, $taxonomy);
+        } catch (RuntimeException $error) {
+            return Response::html(htmlspecialchars($this->error($error->getMessage()), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 404);
+        }
+    }
+
+    public function taxonomyDelete(Request $request): Response
+    {
+        if ($guard = $this->guard('news.edit')) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html($this->translate('admin.error.csrf', 'Invalid or expired CSRF token.'), 419);
+        try {
+            $type = $this->taxonomyType($request);
+            $id = $this->routeId($request);
+            $taxonomy = $this->news->taxonomy($type, $id);
+            if ($taxonomy === null) return Response::html($this->translate('admin.error.taxonomy_not_found', 'News taxonomy not found.'), 404);
+            if ($request->input('confirm_delete') !== '1') throw new RuntimeException('Confirm taxonomy deletion.');
+            $data = $this->input->taxonomyDelete($request->allInput(), $type);
+            $this->news->deleteTaxonomy($type, $id, $data['destination_id'], $data['unclassify']);
+            $actor = $this->auth->user();
+            $this->activity->log((int) $actor['id'], 'news.' . $type . '.deleted', 'news_' . $type, $id, ['destination_id' => $data['destination_id'], 'unclassify' => $data['unclassify']], $request->ip());
+            $this->session->put('news.message', $this->translate('admin.message.taxonomy_deleted', 'News taxonomy deleted and articles handled safely.'));
+            return Response::redirect('/admin/news', 303);
+        } catch (RuntimeException $error) {
+            $type = $request->attribute('type') === 'category' ? 'category' : 'topic';
+            $existing = $this->news->taxonomy($type, (int) ($request->attribute('id') ?: 0));
+            if ($existing === null) return Response::html($this->translate('admin.error.taxonomy_not_found', 'News taxonomy not found.'), 404);
+            return $this->taxonomyDeleteEditor($type, $existing, $this->error($error->getMessage()), 422, $request->allInput());
+        }
+    }
+
     private function editor(?array $article, ?string $error = null, int $status = 200): Response
     {
         return Response::html($this->views->render('@admin-news/edit.twig', [
@@ -202,6 +239,17 @@ final class AdminNewsController
             'taxonomy' => $taxonomy, 'type' => $type, 'is_category' => $type === 'category',
             'parent_options' => $type === 'category' ? $this->news->categoryParentOptions((int) ($taxonomy['id'] ?? 0)) : [],
             'csrf_token' => $this->csrf->token(), 'error' => $error,
+        ]), $status);
+    }
+
+    private function taxonomyDeleteEditor(string $type, array $taxonomy, ?string $error = null, int $status = 200, array $submitted = []): Response
+    {
+        return Response::html($this->views->render('@admin-news/taxonomy-delete.twig', [
+            'taxonomy' => $taxonomy, 'type' => $type, 'is_category' => $type === 'category',
+            'article_count' => $this->news->taxonomyArticleCount($type, (int) $taxonomy['id']),
+            'child_count' => $type === 'category' ? $this->news->taxonomyChildCount($type, (int) $taxonomy['id']) : 0,
+            'destinations' => $this->news->taxonomyDeleteDestinations($type, (int) $taxonomy['id']),
+            'submitted' => $submitted, 'csrf_token' => $this->csrf->token(), 'error' => $error,
         ]), $status);
     }
 
@@ -244,6 +292,11 @@ final class AdminNewsController
             'News taxonomy not found.' => 'taxonomy_not_found', 'Enter a valid taxonomy name.' => 'taxonomy_name',
             'Taxonomy slugs are read-only.' => 'taxonomy_slug_readonly', 'Selected parent category does not exist.' => 'parent_missing',
             'A category cannot be its own parent or descendant.' => 'taxonomy_cycle', 'Category hierarchy contains a cycle.' => 'taxonomy_cycle',
+            'Confirm taxonomy deletion.' => 'taxonomy_confirm_delete', 'Taxonomy destination type does not match the source.' => 'taxonomy_destination_type',
+            'Invalid taxonomy destination.' => 'taxonomy_destination', 'Choose a destination or explicitly leave articles unclassified.' => 'taxonomy_destination_required',
+            'A taxonomy cannot be reassigned to itself.' => 'taxonomy_self_destination', 'Selected taxonomy destination does not exist.' => 'taxonomy_destination_missing',
+            'Move or remove child categories before deleting this category.' => 'taxonomy_children',
+            'News taxonomy deleted and articles handled safely.' => 'taxonomy_deleted',
         ];
         if (isset($keys[$message])) return $this->translate('admin.error.' . $keys[$message], $message);
         if (str_starts_with($message, 'Text must not exceed ')) return $this->translate('admin.error.text_length', $message);

@@ -94,6 +94,23 @@ final class NewsInput
         ];
     }
 
+    /** @return array{destination_id:?int,unclassify:bool} */
+    public function taxonomyDelete(array $input, string $type): array
+    {
+        if (isset($input['destination_type']) && $input['destination_type'] !== '' && $input['destination_type'] !== $type) {
+            throw new RuntimeException('Taxonomy destination type does not match the source.');
+        }
+        $destination = $input['destination_id'] ?? null;
+        $destinationId = null;
+        if ($destination !== null && $destination !== '') {
+            $destinationId = filter_var($destination, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($destinationId === false) throw new RuntimeException('Invalid taxonomy destination.');
+            $destinationId = (int) $destinationId;
+        }
+
+        return ['destination_id' => $destinationId, 'unclassify' => ($input['unclassify'] ?? null) === '1'];
+    }
+
     private function id(mixed $value): ?int
     {
         if ($value === null || $value === '') return null;

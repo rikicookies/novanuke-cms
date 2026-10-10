@@ -174,6 +174,111 @@ final class NewsTaxonomyEditingAcceptanceTest extends MySqlIntegrationTestCase
         self::assertStringContainsString('safe-category', $response->content());
     }
 
+    public function testEmptyCategoryAndTopicDeletionRequiresConfirmationAndPreservesArticles(): void
+    {
+        $category = $this->news->saveTaxonomy('category', ['name' => 'Empty category', 'slug' => 'empty-category', 'description' => null]);
+        $topic = $this->news->saveTaxonomy('topic', ['name' => 'Empty topic', 'slug' => 'empty-topic', 'description' => null]);
+        $this->news->deleteTaxonomy('category', $category, null, false);
+        $this->news->deleteTaxonomy('topic', $topic, null, false);
+        self::assertNull($this->news->taxonomy('category', $category));
+        self::assertNull($this->news->taxonomy('topic', $topic));
+    }
+
+    public function testNonemptyCategoryRequiresExplicitDestinationAndReassignsAllArticleRows(): void
+    {
+        $source = $this->news->saveTaxonomy('category', ['name' => 'Source', 'slug' => 'source', 'description' => null]);
+        $destination = $this->news->saveTaxonomy('category', ['name' => 'Destination', 'slug' => 'destination', 'description' => null]);
+        $topic = $this->news->saveTaxonomy('topic', ['name' => 'Topic', 'slug' => 'topic-delete', 'description' => null]);
+        $active = $this->news->save(null, $this->articleData($source, $topic, 'delete-active'), $this->authorId);
+        $deleted = $this->news->save(null, $this->articleData($source, $topic, 'delete-deleted'), $this->authorId);
+        $this->news->delete($deleted);
+        try {
+            $this->news->deleteTaxonomy('category', $source, null, false);
+            self::fail('Nonempty deletion must require an explicit decision.');
+        } catch (RuntimeException) {
+            self::assertSame(2, $this->news->taxonomyArticleCount('category', $source));
+        }
+        $this->news->deleteTaxonomy('category', $source, $destination, false);
+        self::assertNull($this->news->taxonomy('category', $source));
+        self::assertSame($destination, (int) $this->db()->query("SELECT category_id FROM news_articles WHERE id={$active}")->fetchColumn());
+        self::assertSame($destination, (int) $this->db()->query("SELECT category_id FROM news_articles WHERE id={$deleted}")->fetchColumn());
+        self::assertNotNull($this->news->article($active));
+        self::assertNull($this->news->article($deleted));
+    }
+
+    public function testExplicitUnclassificationPreservesTopicAndPublicArticleUrl(): void
+    {
+        $category = $this->news->saveTaxonomy('category', ['name' => 'Unclassify category', 'slug' => 'unclassify-category', 'description' => null]);
+        $topic = $this->news->saveTaxonomy('topic', ['name' => 'Keep topic', 'slug' => 'keep-topic', 'description' => null]);
+        $id = $this->news->save(null, $this->articleData($category, $topic, 'unclassified-story'), $this->authorId);
+        $this->news->deleteTaxonomy('category', $category, null, true);
+        $row = $this->db()->query("SELECT category_id,topic_id,slug,status,audience FROM news_articles WHERE id={$id}")->fetch();
+        self::assertNull($row['category_id']);
+        self::assertSame($topic, (int) $row['topic_id']);
+        self::assertSame('unclassified-story', $row['slug']);
+        self::assertSame('published', $row['status']);
+        self::assertSame($id, (int) $this->news->publicArticle('unclassified-story')['id']);
+    }
+
+    public function testChildrenAndInvalidDestinationsAreRejectedWithoutMutation(): void
+    {
+        $parent = $this->news->saveTaxonomy('category', ['name' => 'Parent', 'slug' => 'delete-parent', 'description' => null]);
+        $child = $this->createCategoryWithParent('Child', 'delete-child', $parent);
+        $other = $this->news->saveTaxonomy('category', ['name' => 'Other', 'slug' => 'delete-other', 'description' => null]);
+        try {
+            $this->news->deleteTaxonomy('category', $parent, $other, false);
+            self::fail('Categories with children must be blocked.');
+        } catch (RuntimeException) {
+            self::assertNotNull($this->news->taxonomy('category', $parent));
+            self::assertSame($parent, (int) $this->news->taxonomy('category', $child)['parent_id']);
+        }
+        try {
+            $this->news->deleteTaxonomy('category', $other, 999999, false);
+            self::fail('Missing destinations must be rejected.');
+        } catch (RuntimeException) {
+            self::assertNotNull($this->news->taxonomy('category', $other));
+        }
+        try {
+            $this->news->deleteTaxonomy('category', $other, $other, false);
+            self::fail('Self destinations must be rejected.');
+        } catch (RuntimeException) {
+            self::assertNotNull($this->news->taxonomy('category', $other));
+        }
+        try {
+            $this->input->taxonomyDelete(['destination_type' => 'topic', 'destination_id' => '1'], 'category');
+            self::fail('Cross-type destinations must be rejected.');
+        } catch (RuntimeException) {
+            self::assertNotNull($this->news->taxonomy('category', $other));
+        }
+        self::assertSame(1, $this->news->taxonomyChildCount('category', $parent));
+    }
+
+    public function testDeletionControllerRequiresPermissionCsrfConfirmationAndReportsCount(): void
+    {
+        $category = $this->news->saveTaxonomy('category', ['name' => 'Controller delete', 'slug' => 'controller-delete', 'description' => null]);
+        $topic = $this->news->saveTaxonomy('topic', ['name' => 'Controller topic', 'slug' => 'controller-topic', 'description' => null]);
+        $this->news->save(null, $this->articleData($category, $topic, 'controller-delete-story'), $this->authorId);
+        $route = ['type' => 'category', 'id' => (string) $category];
+        self::assertSame(302, $this->admin->taxonomyDeleteConfirm($this->request('GET', '/admin/news/taxonomy/category/' . $category . '/delete')->withAttributes($route))->status());
+        $editor = $this->createUser('delete-editor'); $this->grant($editor, 'news.edit'); $this->loginAs($editor);
+        $confirm = $this->admin->taxonomyDeleteConfirm($this->request('GET', '/admin/news/taxonomy/category/' . $category . '/delete')->withAttributes($route));
+        self::assertSame(200, $confirm->status());
+        self::assertStringContainsString('1 article', $confirm->content());
+        $post = ['confirm_delete' => '1', 'destination_type' => 'category', 'unclassify' => '1'];
+        self::assertSame(419, $this->admin->taxonomyDelete($this->request('POST', '/admin/news/taxonomy/category/' . $category . '/delete', $post)->withAttributes($route))->status());
+        $post['_token'] = 'invalid';
+        self::assertSame(419, $this->admin->taxonomyDelete($this->request('POST', '/admin/news/taxonomy/category/' . $category . '/delete', $post)->withAttributes($route))->status());
+        $post['_token'] = $this->csrf->token();
+        self::assertSame(303, $this->admin->taxonomyDelete($this->request('POST', '/admin/news/taxonomy/category/' . $category . '/delete', $post)->withAttributes($route))->status());
+        self::assertNull($this->news->taxonomy('category', $category));
+        self::assertSame(404, $this->admin->taxonomyDeleteConfirm($this->request('GET', '/admin/news/taxonomy/category/999999/delete')->withAttributes(['type' => 'category', 'id' => '999999']))->status());
+        $emptyTopic = $this->news->saveTaxonomy('topic', ['name' => 'Empty controller topic', 'slug' => 'empty-controller-topic', 'description' => null]);
+        $emptyRoute = ['type' => 'topic', 'id' => (string) $emptyTopic];
+        self::assertSame(422, $this->admin->taxonomyDelete($this->request('POST', '/admin/news/taxonomy/topic/' . $emptyTopic . '/delete', ['_token' => $this->csrf->token()])->withAttributes($emptyRoute))->status());
+        self::assertSame(303, $this->admin->taxonomyDelete($this->request('POST', '/admin/news/taxonomy/topic/' . $emptyTopic . '/delete', ['_token' => $this->csrf->token(), 'confirm_delete' => '1'])->withAttributes($emptyRoute))->status());
+        self::assertNull($this->news->taxonomy('topic', $emptyTopic));
+    }
+
     /** @return array<string,mixed> */
     private function articleData(int $category, int $topic, string $slug = 'taxonomy-story'): array
     {
