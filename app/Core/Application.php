@@ -68,6 +68,7 @@ use NovaNuke\Core\Menus\MenuUrlResolver;
 use NovaNuke\Core\System\SystemInspector;
 use NovaNuke\Core\Backup\DatabaseBackup;
 use NovaNuke\Core\Backup\BackupSetCoordinator;
+use NovaNuke\Core\Backup\BackupSetStatus;
 use NovaNuke\Core\Backup\FileBackup;
 use NovaNuke\Core\Backup\BackupVerifier;
 use NovaNuke\Core\Backup\FileBackupRestorer;
@@ -396,6 +397,9 @@ final class Application
         $container->bind(BackupSetCoordinator::class, static fn (Container $c) => new BackupSetCoordinator(
             $c->get(PDO::class),
             $rootPath,
+            $rootPath . '/storage/private/backups',
+        ));
+        $container->bind(BackupSetStatus::class, static fn () => new BackupSetStatus(
             $rootPath . '/storage/private/backups',
         ));
         $container->bind(FileBackup::class, static fn () => new FileBackup(
