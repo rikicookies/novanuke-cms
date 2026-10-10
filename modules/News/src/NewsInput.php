@@ -78,6 +78,22 @@ final class NewsInput
         return ['name' => $name, 'slug' => $slug, 'description' => $this->limited($input['description'] ?? null, 500)];
     }
 
+    /** @return array{name:string,description:?string,parent_id:?int} */
+    public function taxonomyUpdate(array $input, string $currentSlug, bool $category): array
+    {
+        $name = trim((string) ($input['name'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 120) throw new RuntimeException('Enter a valid taxonomy name.');
+        if (array_key_exists('slug', $input) && trim((string) $input['slug']) !== $currentSlug) {
+            throw new RuntimeException('Taxonomy slugs are read-only.');
+        }
+
+        return [
+            'name' => $name,
+            'description' => $this->limited($input['description'] ?? null, 500),
+            'parent_id' => $category ? $this->id($input['parent_id'] ?? null) : null,
+        ];
+    }
+
     private function id(mixed $value): ?int
     {
         if ($value === null || $value === '') return null;

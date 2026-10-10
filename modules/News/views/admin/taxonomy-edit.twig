@@ -1,0 +1,18 @@
+{% extends "@admin-core/layouts/admin.twig" %}
+{% block title %}{{ trans('news::admin.edit_taxonomy') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+{% include 'components/admin-breadcrumb.twig' with {items: [{label: trans('news::title'), url: '/admin/news'}, {label: trans('news::admin.edit_taxonomy')}]} only %}
+{% include 'components/admin-page-heading.twig' with {eyebrow: trans('news::admin.eyebrow'), title: is_category ? trans('news::admin.edit_category') : trans('news::admin.edit_topic'), description: trans('news::admin.edit_taxonomy_help'), actions: [{label: trans('news::admin.back'), url: '/admin/news', icon:'ph-arrow-left'}]} only %}
+{% if error %}<div class="alert alert-danger alert-icon-start"><span class="alert-icon bg-danger text-white"><i class="ph-warning"></i></span>{{ error }}</div>{% endif %}
+<div class="card nn-taxonomy-card"><div class="card-body p-4">
+<form method="post" action="/admin/news/taxonomy/{{ type }}/{{ taxonomy.id }}/update">
+<input type="hidden" name="_token" value="{{ csrf_token }}">
+<div class="row g-3">
+<div class="col-md-6"><label class="form-label" for="taxonomy-name">{{ trans('news::admin.name') }}</label><input id="taxonomy-name" class="form-control" name="name" required maxlength="120" value="{{ taxonomy.name|default('') }}"></div>
+<div class="col-md-6"><label class="form-label" for="taxonomy-slug">{{ trans('news::admin.slug') }}</label><input id="taxonomy-slug" class="form-control" name="slug" readonly value="{{ taxonomy.slug|default('') }}"><div class="form-text">{{ trans('news::admin.slug_readonly') }}</div></div>
+{% if is_category %}<div class="col-md-6"><label class="form-label" for="taxonomy-parent">{{ trans('news::admin.parent_category') }}</label><select id="taxonomy-parent" class="form-select" name="parent_id"><option value="">{{ trans('news::admin.no_parent') }}</option>{% for parent in parent_options %}<option value="{{ parent.id }}"{{ taxonomy.parent_id == parent.id ? ' selected' : '' }}>{{ parent.name }} ({{ parent.slug }})</option>{% endfor %}</select></div>{% endif %}
+<div class="col-12"><label class="form-label" for="taxonomy-description">{{ trans('news::admin.description_field') }}</label><textarea id="taxonomy-description" class="form-control" name="description" maxlength="500" rows="5">{{ taxonomy.description|default('') }}</textarea></div>
+</div>
+<div class="d-flex flex-wrap gap-2 mt-4"><button class="btn btn-primary" type="submit"><i class="ph-check me-2"></i>{{ trans('news::admin.save_taxonomy') }}</button><a class="btn btn-light border" href="/admin/news">{{ trans('news::admin.cancel') }}</a></div>
+</form></div></div>
+{% endblock %}

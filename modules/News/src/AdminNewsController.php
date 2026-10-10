@@ -150,6 +150,42 @@ final class AdminNewsController
         }
     }
 
+    public function taxonomyEdit(Request $request): Response
+    {
+        if ($guard = $this->guard('news.edit')) return $guard;
+        try {
+            $type = $this->taxonomyType($request);
+            $taxonomy = $this->news->taxonomy($type, $this->routeId($request));
+            if ($taxonomy === null) return Response::html($this->translate('admin.error.taxonomy_not_found', 'News taxonomy not found.'), 404);
+            return $this->taxonomyEditor($type, $taxonomy);
+        } catch (RuntimeException $error) {
+            return Response::html(htmlspecialchars($this->error($error->getMessage()), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 404);
+        }
+    }
+
+    public function taxonomyUpdate(Request $request): Response
+    {
+        if ($guard = $this->guard('news.edit')) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html($this->translate('admin.error.csrf', 'Invalid or expired CSRF token.'), 419);
+        try {
+            $type = $this->taxonomyType($request);
+            $id = $this->routeId($request);
+            $current = $this->news->taxonomy($type, $id);
+            if ($current === null) return Response::html($this->translate('admin.error.taxonomy_not_found', 'News taxonomy not found.'), 404);
+            $data = $this->input->taxonomyUpdate($request->allInput(), (string) $current['slug'], $type === 'category');
+            $this->news->updateTaxonomy($type, $id, $data);
+            $actor = $this->auth->user();
+            $this->activity->log((int) $actor['id'], 'news.' . $type . '.updated', 'news_' . $type, $id, [], $request->ip());
+            $this->session->put('news.message', $this->translate('admin.message.taxonomy_updated', 'News taxonomy updated.'));
+            return Response::redirect('/admin/news', 303);
+        } catch (RuntimeException $error) {
+            $type = $request->attribute('type') === 'category' ? 'category' : 'topic';
+            $existing = $this->news->taxonomy($type, (int) ($request->attribute('id') ?: 0));
+            $taxonomy = $existing === null ? array_merge(['id' => (int) ($request->attribute('id') ?: 0)], $request->allInput()) : array_merge($existing, $request->allInput(), ['id' => $existing['id'], 'slug' => $existing['slug']]);
+            return $this->taxonomyEditor($type, $taxonomy, $this->error($error->getMessage()), 422);
+        }
+    }
+
     private function editor(?array $article, ?string $error = null, int $status = 200): Response
     {
         return Response::html($this->views->render('@admin-news/edit.twig', [
@@ -158,6 +194,23 @@ final class AdminNewsController
             'csrf_token' => $this->csrf->token(), 'error' => $error,
             'media_available' => $this->media !== null, 'media_images' => $this->media?->all() ?? [],
         ]), $status);
+    }
+
+    private function taxonomyEditor(string $type, array $taxonomy, ?string $error = null, int $status = 200): Response
+    {
+        return Response::html($this->views->render('@admin-news/taxonomy-edit.twig', [
+            'taxonomy' => $taxonomy, 'type' => $type, 'is_category' => $type === 'category',
+            'parent_options' => $type === 'category' ? $this->news->categoryParentOptions((int) ($taxonomy['id'] ?? 0)) : [],
+            'csrf_token' => $this->csrf->token(), 'error' => $error,
+        ]), $status);
+    }
+
+    private function taxonomyType(Request $request): string
+    {
+        $type = (string) $request->attribute('type');
+        if (! in_array($type, ['category', 'topic'], true)) throw new RuntimeException('Invalid taxonomy type.');
+
+        return $type;
     }
 
     private function guard(string $permission): ?Response
@@ -188,6 +241,9 @@ final class AdminNewsController
             'Use no more than 20 tags.' => 'tag_count', 'The news slug is already in use.' => 'slug_used',
             'Invalid taxonomy type.' => 'taxonomy_type', 'That taxonomy slug is already in use.' => 'taxonomy_slug_used',
             'Selected category or topic does not exist.' => 'taxonomy_missing',
+            'News taxonomy not found.' => 'taxonomy_not_found', 'Enter a valid taxonomy name.' => 'taxonomy_name',
+            'Taxonomy slugs are read-only.' => 'taxonomy_slug_readonly', 'Selected parent category does not exist.' => 'parent_missing',
+            'A category cannot be its own parent or descendant.' => 'taxonomy_cycle', 'Category hierarchy contains a cycle.' => 'taxonomy_cycle',
         ];
         if (isset($keys[$message])) return $this->translate('admin.error.' . $keys[$message], $message);
         if (str_starts_with($message, 'Text must not exceed ')) return $this->translate('admin.error.text_length', $message);

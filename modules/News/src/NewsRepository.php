@@ -129,6 +129,91 @@ final class NewsRepository
         }
     }
 
+    public function taxonomy(string $type, int $id): ?array
+    {
+        $table = $this->taxonomyTable($type);
+        $statement = $this->database->prepare("SELECT * FROM {$table} WHERE id=:id");
+        $statement->execute(['id' => $id]);
+        $taxonomy = $statement->fetch();
+
+        return is_array($taxonomy) ? $taxonomy : null;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function categoryParentOptions(int $categoryId): array
+    {
+        $categories = $this->database->query('SELECT id,parent_id,name,slug FROM news_categories ORDER BY name,id')->fetchAll();
+        $children = [];
+        foreach ($categories as $category) {
+            $parent = $category['parent_id'] === null ? 0 : (int) $category['parent_id'];
+            $children[$parent][] = (int) $category['id'];
+        }
+        $excluded = [$categoryId => true];
+        $pending = $children[$categoryId] ?? [];
+        while ($pending !== []) {
+            $child = array_pop($pending);
+            if (isset($excluded[$child])) continue;
+            $excluded[$child] = true;
+            foreach ($children[$child] ?? [] as $descendant) $pending[] = $descendant;
+        }
+
+        return array_values(array_filter($categories, static function (array $category) use ($excluded): bool {
+            return ! isset($excluded[(int) $category['id']]);
+        }));
+    }
+
+    /** @param array<string,mixed> $data */
+    public function updateTaxonomy(string $type, int $id, array $data): void
+    {
+        $table = $this->taxonomyTable($type);
+        $this->database->beginTransaction();
+        try {
+            $currentStatement = $this->database->prepare("SELECT * FROM {$table} WHERE id=:id FOR UPDATE");
+            $currentStatement->execute(['id' => $id]);
+            $current = $currentStatement->fetch();
+            if (! is_array($current)) throw new RuntimeException('News taxonomy not found.');
+
+            if ($type === 'category') $this->assertCategoryParent($id, $data['parent_id'] ?? null);
+            $fields = 'name=:name,description=:description,updated_at=UTC_TIMESTAMP()';
+            $parameters = ['name' => $data['name'], 'description' => $data['description'] ?? null, 'id' => $id];
+            if ($type === 'category') {
+                $fields = 'parent_id=:parent_id,' . $fields;
+                $parameters['parent_id'] = $data['parent_id'] ?? null;
+            }
+            $statement = $this->database->prepare("UPDATE {$table} SET {$fields} WHERE id=:id");
+            $statement->execute($parameters);
+            $this->database->commit();
+        } catch (\Throwable $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            throw $error;
+        }
+    }
+
+    private function taxonomyTable(string $type): string
+    {
+        $table = $type === 'category' ? 'news_categories' : ($type === 'topic' ? 'news_topics' : null);
+        if ($table === null) throw new RuntimeException('Invalid taxonomy type.');
+
+        return $table;
+    }
+
+    private function assertCategoryParent(int $categoryId, mixed $parentId): void
+    {
+        if ($parentId === null) return;
+        $parentId = (int) $parentId;
+        $statement = $this->database->prepare('SELECT id,parent_id FROM news_categories WHERE id=:id FOR UPDATE');
+        $seen = [];
+        while ($parentId !== 0) {
+            if (isset($seen[$parentId])) throw new RuntimeException('Category hierarchy contains a cycle.');
+            $seen[$parentId] = true;
+            if ($parentId === $categoryId) throw new RuntimeException('A category cannot be its own parent or descendant.');
+            $statement->execute(['id' => $parentId]);
+            $parent = $statement->fetch();
+            if (! is_array($parent)) throw new RuntimeException('Selected parent category does not exist.');
+            $parentId = $parent['parent_id'] === null ? 0 : (int) $parent['parent_id'];
+        }
+    }
+
     public function publicArticles(int $page, ?string $categorySlug = null, ?int $userId = null): array
     {
         $audiences = $this->visibleAudiences($userId);
