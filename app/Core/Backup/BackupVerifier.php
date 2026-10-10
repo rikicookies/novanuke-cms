@@ -212,7 +212,7 @@ final class BackupVerifier
         ];
     }
 
-    /** @return array{files:int,bytes:int,artifact_bytes:int|false,sha256:string,backup_set:string} */
+    /** @return array{files:int,bytes:int,artifact_bytes:int|false,sha256:string,backup_set:string,entries:array<string,array{bytes:int,sha256:string}>} */
     public function verifyFileArchive(string $path): array
     {
         $this->assertRegularFile($path);
@@ -309,6 +309,7 @@ final class BackupVerifier
             'artifact_bytes' => filesize($path),
             'sha256' => $hash,
             'backup_set' => $backupSet,
+            'entries' => $entries,
         ];
     }
 

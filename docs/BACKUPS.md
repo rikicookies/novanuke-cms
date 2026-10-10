@@ -94,3 +94,25 @@ The bundle is a streaming TAR containing `export.json`, the original `manifest.j
 Super-administrators with `backup.manage` can use the Export action in Admin Backup Manager. The action is POST-only, CSRF-protected, resolves only a strict server-side backup-set ID, verifies the set before streaming and removes its private temporary bundle after the response. No public URL, signed link, browser passphrase or arbitrary filesystem path is accepted. Plaintext exports contain sensitive database and file data; encrypted exports preserve ciphertext but do not recover the passphrase.
 
 The export does not include `.env`, vendor dependencies, Core source, generated caches/assets, runtime secrets, logs or sessions beyond whatever was already present in the verified backup artifacts. Store the resulting file outside the host, preferably encrypted at rest, and verify it again after transfer. Large sets remain subject to PHP request, disk and hosting limits; CLI/SFTP or provider snapshots may be more appropriate for very large installations. This workflow does not perform live restore.
+
+## Offline recovery preview and disposable restore
+
+Inspect a portable bundle without changing any database or filesystem:
+
+```text
+php bin/cms backup:restore-preview C:\\protected\\novanuke-backup.tar
+php bin/cms backup:restore-preview /protected/novanuke-backup.tar --passphrase-file=/protected/operator-secret
+```
+
+The JSON result distinguishes `READY_FOR_CONTROLLED_RESTORE`, `NEEDS_PASSPHRASE`, `INSUFFICIENT_METADATA`, `INCOMPATIBLE` and `CORRUPT`. Preview never executes SQL, PHP, modules or themes. Hash integrity is not external authenticity, and a matching hash is not a production-readiness claim.
+
+For a controlled disposable recovery, provide only an empty database matching `novanuke_test_[a-f0-9]{16}` and an empty filesystem directory outside the active installation:
+
+```text
+NOVANUKE_TEST_DB_HOST=127.0.0.1 NOVANUKE_TEST_DB_PORT=3306 NOVANUKE_TEST_DB_USERNAME=restore_operator NOVANUKE_TEST_DB_PASSWORD=... \
+php bin/cms backup:restore-offline /protected/novanuke-backup.tar --database=novanuke_test_0123456789abcdef --files-dir=/protected/empty-recovery --confirm-empty-target
+```
+
+On Windows PowerShell, set the disposable connection variables for the command process before running it. The command refuses the configured application database, nonempty databases, nonempty or active application paths, symlinked destinations and unsafe archive entries. It prints a machine-readable recovery result, verifies restored SQL tables/row counts and file hashes, and never executes restored module/theme code. Encrypted bundles require the external passphrase file. The source bundle and source manifest are not rewritten.
+
+The disposable database is emptied after verification by the existing recovery verifier. Files are restored only into the explicitly selected empty destination; failures remove files created by the operation and never delete pre-existing user data. This is an offline recovery test, not a one-click hosting migration: vendor/Core compatibility, `.env`/runtime secrets, document root, DNS/TLS, SMTP and cron remain operator work.

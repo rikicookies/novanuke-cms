@@ -15,6 +15,7 @@ use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\BackupSetStatus;
 use NovaNuke\Core\Backup\BackupExportBundle;
 use NovaNuke\Core\Backup\PortableRecoveryReadiness;
+use NovaNuke\Core\Backup\OfflineRecovery;
 use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
@@ -72,6 +73,18 @@ function backupPassphraseArgument(array $arguments): ?string
         }
     }
     return backupPassphraseFile($path);
+}
+
+function offlineRestoreDatabase(string $databaseName): PDO
+{
+    if (preg_match('/^novanuke_test_[a-f0-9]{16}$/', $databaseName) !== 1) throw new RuntimeException('Offline restore database must match novanuke_test_[a-f0-9]{16}.');
+    $host = getenv('NOVANUKE_TEST_DB_HOST');
+    $port = getenv('NOVANUKE_TEST_DB_PORT') ?: '3306';
+    $username = getenv('NOVANUKE_TEST_DB_USERNAME');
+    $password = getenv('NOVANUKE_TEST_DB_PASSWORD');
+    if ($host === false || $username === false || $password === false) throw new RuntimeException('Offline restore requires explicit NOVANUKE_TEST_DB_HOST, NOVANUKE_TEST_DB_USERNAME and NOVANUKE_TEST_DB_PASSWORD values.');
+    if (filter_var($port, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === false) throw new RuntimeException('Offline restore database port is invalid.');
+    return new PDO("mysql:host={$host};port={$port};dbname={$databaseName};charset=utf8mb4", $username, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
 }
 
 if ($command === 'rc:check') {
@@ -448,6 +461,42 @@ if ($command === 'theme:check') {
         fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
     }
     exit($passed?0:1);
+}
+
+if ($command === 'backup:restore-preview') {
+    $arguments = array_slice($argv, 2);
+    $path = null;
+    foreach ($arguments as $argument) {
+        if (str_starts_with($argument, '--passphrase-file=')) continue;
+        if ($path !== null || str_starts_with($argument, '--')) { fwrite(STDERR, "Usage: php bin/cms backup:restore-preview PATH [--passphrase-file=PATH]\n"); exit(2); }
+        $path = $argument;
+    }
+    if ($path === null || count($arguments) > 2) { fwrite(STDERR, "Usage: php bin/cms backup:restore-preview PATH [--passphrase-file=PATH]\n"); exit(2); }
+    try {
+        $result = (new OfflineRecovery(new BackupExportBundle($rootPath . '/storage/private/backups'), $rootPath))->preview($path, backupPassphraseArgument($arguments));
+        fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
+        exit($result['status'] === OfflineRecovery::READY ? 0 : 1);
+    } catch (Throwable $error) { fwrite(STDERR, "Offline recovery preview failed: {$error->getMessage()}\n"); exit(1); }
+}
+
+if ($command === 'backup:restore-offline') {
+    $arguments = array_slice($argv, 2);
+    $path = null; $databaseName = null; $filesDirectory = null; $confirmed = false;
+    foreach ($arguments as $argument) {
+        if (str_starts_with($argument, '--passphrase-file=')) continue;
+        if (str_starts_with($argument, '--database=')) $databaseName = substr($argument, 11);
+        elseif (str_starts_with($argument, '--files-dir=')) $filesDirectory = substr($argument, 12);
+        elseif ($argument === '--confirm-empty-target') $confirmed = true;
+        elseif ($path === null && ! str_starts_with($argument, '--')) $path = $argument;
+        else { fwrite(STDERR, "Usage: php bin/cms backup:restore-offline PATH --database=NAME --files-dir=PATH --confirm-empty-target [--passphrase-file=PATH]\n"); exit(2); }
+    }
+    if ($path === null || $databaseName === null || $databaseName === '' || $filesDirectory === null || $filesDirectory === '' || ! $confirmed) { fwrite(STDERR, "Usage: php bin/cms backup:restore-offline PATH --database=NAME --files-dir=PATH --confirm-empty-target [--passphrase-file=PATH]\n"); exit(2); }
+    try {
+        $database = offlineRestoreDatabase($databaseName);
+        $result = (new OfflineRecovery(new BackupExportBundle($rootPath . '/storage/private/backups'), $rootPath))->restore($path, $database, $filesDirectory, backupPassphraseArgument($arguments), $confirmed);
+        fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
+        exit(0);
+    } catch (Throwable $error) { fwrite(STDERR, "Offline recovery restore failed: {$error->getMessage()}\n"); exit(1); }
 }
 
 $application = require $rootPath . '/bootstrap/app.php';

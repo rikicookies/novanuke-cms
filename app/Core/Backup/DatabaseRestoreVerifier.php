@@ -14,7 +14,7 @@ final class DatabaseRestoreVerifier
     {
     }
 
-    /** @return array{statements:int,tables:int,migrations:int} */
+    /** @return array{statements:int,tables:int,migrations:int,row_counts:array<string,int>} */
     public function verify(string $sqlPath): array
     {
         if (! is_file($sqlPath) || is_link($sqlPath) || ! is_readable($sqlPath)) {
@@ -37,7 +37,12 @@ final class DatabaseRestoreVerifier
             $hasMigrations = (int) $this->database->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name='migrations'")->fetchColumn();
             if ($hasMigrations !== 1) throw new RuntimeException('Restored database is missing the migrations table.');
             $migrations = (int) $this->database->query('SELECT COUNT(*) FROM `migrations`')->fetchColumn();
-            return ['statements' => count($statements), 'tables' => $tables, 'migrations' => $migrations];
+            $rowCounts = [];
+            foreach ($this->database->query("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type='BASE TABLE' ORDER BY table_name")->fetchAll(PDO::FETCH_COLUMN) as $table) {
+                $identifier = '`' . str_replace('`', '``', (string) $table) . '`';
+                $rowCounts[(string) $table] = (int) $this->database->query("SELECT COUNT(*) FROM {$identifier}")->fetchColumn();
+            }
+            return ['statements' => count($statements), 'tables' => $tables, 'migrations' => $migrations, 'row_counts' => $rowCounts];
         } catch (Throwable $error) {
             throw new RuntimeException('Disposable SQL restore failed: ' . $error->getMessage(), 0, $error);
         } finally {

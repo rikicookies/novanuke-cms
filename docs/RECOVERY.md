@@ -116,3 +116,24 @@ The bundle contains only the existing manifest and the original SQL/TAR bytes pl
 The Admin Backup Manager offers the same export as an authenticated POST action for users with `backup.manage`. CSRF, strict backup-set IDs, private storage, verification-before-streaming, no-store headers and temporary-file cleanup are enforced. There are no public backup URLs. Plaintext bundles must be treated as containing passwords hashes, private content and executable module/theme files.
 
 On shared hosting, a large bundle may exceed request timeout, disk or bandwidth limits. In that case use the CLI command, SFTP/file manager or a provider snapshot, then run `backup:export-verify` on a separate compatible NovaNuke checkout. Export verification is not a live restore and is not proof of external authenticity.
+
+## Offline recovery preview and empty-target restore
+
+Preview a portable export without mutation:
+
+```text
+php bin/cms backup:restore-preview C:\\protected\\novanuke-backup.tar
+php bin/cms backup:restore-preview /protected/novanuke-backup.tar --passphrase-file=/protected/operator-secret
+```
+
+Preview reports explicit readiness, passphrase, legacy metadata and corruption states. It never imports SQL, extracts files or executes PHP/module/theme content.
+
+The controlled restore command is deliberately CLI-only and requires explicit disposable credentials and confirmation:
+
+```text
+php bin/cms backup:restore-offline /protected/novanuke-backup.tar --database=novanuke_test_0123456789abcdef --files-dir=/protected/empty-recovery --confirm-empty-target
+```
+
+`NOVANUKE_TEST_DB_HOST`, `NOVANUKE_TEST_DB_PORT`, `NOVANUKE_TEST_DB_USERNAME` and `NOVANUKE_TEST_DB_PASSWORD` must be supplied explicitly. The database name must match `novanuke_test_[a-f0-9]{16}` and be empty immediately before import. The filesystem target must be absolute, empty, outside the running installation and free of symlink/junction escapes. Existing content is never overwritten or deleted.
+
+The result includes the backup-set ID, restored table and row-count evidence, restored file totals/hashes, cleanup scope and limitations. Encrypted artifacts require `--passphrase-file`; the secret is not written to reports or logs. Legacy manifests remain usable only with their available metadata and are reported as insufficient for a full portability claim. A successful disposable restore is evidence for that controlled target only; it is not a live migration or proof of external authenticity.

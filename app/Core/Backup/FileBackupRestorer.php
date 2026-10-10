@@ -77,6 +77,11 @@ final class FileBackupRestorer
                     }finally{
                         fclose($output);
                     }
+                    $expected = $verified['entries'][$archivePath] ?? null;
+                    $actualHash = hash_file('sha256', $target);
+                    if (! is_array($expected) || filesize($target) !== $expected['bytes'] || $actualHash === false || ! hash_equals($expected['sha256'], $actualHash)) {
+                        throw new RuntimeException("Restored file hash does not match the verified backup manifest: {$archivePath}");
+                    }
                     @chmod($target,0600);
                     $written[]=$target;
                     $files++;

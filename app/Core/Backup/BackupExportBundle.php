@@ -76,7 +76,27 @@ final class BackupExportBundle
     }
 
     /** @return array{backup_set_id:string,encrypted:bool,verification:string,manifest:array<string,mixed>} */
-    public function verify(string $bundlePath): array
+    public function verify(string $bundlePath, ?string $passphrase = null): array
+    {
+        return $this->withVerifiedArtifacts($bundlePath, $passphrase, static function (array $context): array {
+            return [
+                'backup_set_id' => $context['backup_set_id'],
+                'encrypted' => $context['encrypted'],
+                'verification' => $context['verification'],
+                'manifest' => $context['manifest'],
+            ];
+        });
+    }
+
+    /**
+     * Keep verified bundle artifacts private and ephemeral while an operation
+     * consumes them. The callback must not retain any returned paths.
+     *
+     * @template TResult
+     * @param callable(array<string,mixed>):TResult $callback
+     * @return TResult
+     */
+    public function withVerifiedArtifacts(string $bundlePath, ?string $passphrase, callable $callback): mixed
     {
         if (! is_file($bundlePath) || is_link($bundlePath) || ! is_readable($bundlePath)) throw new RuntimeException('Export bundle is unavailable.');
         $temporary = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'novanuke-export-verify-' . bin2hex(random_bytes(8));
@@ -96,8 +116,21 @@ final class BackupExportBundle
                 $stagedArtifact = $setDirectory . DIRECTORY_SEPARATOR . $name;
                 if (! copy($entries[$relative]['path'], $stagedArtifact) || ! chmod($stagedArtifact, 0600)) throw new RuntimeException('Export artifact could not be staged.');
             }
-            $verified = (new BackupVerifier($temporary))->verifyManifestForExport($setDirectory . DIRECTORY_SEPARATOR . 'manifest.json');
-            return ['backup_set_id' => $setId, 'encrypted' => $descriptor['encryption'] === 'preserved-ciphertext', 'verification' => (string) $descriptor['verification'], 'manifest' => $verified['manifest']];
+            $manifestPath = $setDirectory . DIRECTORY_SEPARATOR . 'manifest.json';
+            $verified = $passphrase === null
+                ? (new BackupVerifier($temporary))->verifyManifestForExport($manifestPath)
+                : (new BackupVerifier($temporary))->verifyManifest($manifestPath, false, $passphrase);
+            return $callback([
+                'backup_set_id' => $setId,
+                'encrypted' => $descriptor['encryption'] === 'preserved-ciphertext',
+                'verification' => (string) $descriptor['verification'],
+                'manifest' => $verified['manifest'],
+                'descriptor' => $descriptor,
+                'manifest_path' => $manifestPath,
+                'database_path' => $setDirectory . DIRECTORY_SEPARATOR . $this->safeName(basename((string) $descriptor['files'][1]['path'])),
+                'files_path' => $setDirectory . DIRECTORY_SEPARATOR . $this->safeName(basename((string) $descriptor['files'][2]['path'])),
+                'temporary_directory' => $temporary,
+            ]);
         } finally {
             $this->removeTree($temporary);
         }
