@@ -51,8 +51,7 @@ final class BackupExportBundle
             'warnings' => $encrypted ? ['Ciphertext is preserved; authenticated decryption still requires the original external passphrase.'] : ['This export contains sensitive plaintext backup data.'],
         ];
         if (! is_int($descriptor['files'][0]['bytes']) || ! is_string($descriptor['files'][0]['sha256'])) throw new RuntimeException('Export manifest identity is unavailable.');
-        $stream = fopen($temporary, 'xb');
-        if ($stream === false) throw new RuntimeException('Unable to create the export bundle.');
+        $stream = $this->openPrivateFile($temporary, 'Unable to create the export bundle.');
         try {
             chmod($temporary, 0600);
             $writer = new TarWriter($stream);
@@ -89,11 +88,13 @@ final class BackupExportBundle
             $setId = BackupSetId::normalize((string) $descriptor['backup_set_id']);
             $setDirectory = $temporary . DIRECTORY_SEPARATOR . $setId;
             if (! mkdir($setDirectory, 0700)) throw new RuntimeException('Export verification storage is unavailable.');
-            if (! copy($entries['manifest.json']['path'], $setDirectory . DIRECTORY_SEPARATOR . 'manifest.json')) throw new RuntimeException('Export manifest could not be staged.');
+            $stagedManifest = $setDirectory . DIRECTORY_SEPARATOR . 'manifest.json';
+            if (! copy($entries['manifest.json']['path'], $stagedManifest) || ! chmod($stagedManifest, 0600)) throw new RuntimeException('Export manifest could not be staged.');
             foreach (['database', 'files'] as $kind) {
                 $relative = (string) $descriptor['files'][$kind === 'database' ? 1 : 2]['path'];
                 $name = $this->safeName(basename($relative));
-                if (! copy($entries[$relative]['path'], $setDirectory . DIRECTORY_SEPARATOR . $name)) throw new RuntimeException('Export artifact could not be staged.');
+                $stagedArtifact = $setDirectory . DIRECTORY_SEPARATOR . $name;
+                if (! copy($entries[$relative]['path'], $stagedArtifact) || ! chmod($stagedArtifact, 0600)) throw new RuntimeException('Export artifact could not be staged.');
             }
             $verified = (new BackupVerifier($temporary))->verifyManifestForExport($setDirectory . DIRECTORY_SEPARATOR . 'manifest.json');
             return ['backup_set_id' => $setId, 'encrypted' => $descriptor['encryption'] === 'preserved-ciphertext', 'verification' => (string) $descriptor['verification'], 'manifest' => $verified['manifest']];
@@ -126,8 +127,7 @@ final class BackupExportBundle
                 if ($sizeField === '' || preg_match('/^[0-7]+$/', $sizeField) !== 1) throw new RuntimeException('Export bundle TAR size is invalid.');
                 $size = octdec($sizeField);
                 $target = $temporary . DIRECTORY_SEPARATOR . 'entry-' . count($entries);
-                $output = fopen($target, 'xb');
-                if ($output === false) throw new RuntimeException('Export verification storage is unavailable.');
+                $output = $this->openPrivateFile($target, 'Export verification storage is unavailable.');
                 $hash = hash_init('sha256');
                 $remaining = $size;
                 try {
@@ -224,6 +224,20 @@ final class BackupExportBundle
             $cursor = dirname($cursor);
         }
         if (is_link($cursor)) throw new RuntimeException('Export storage is unavailable.');
+    }
+
+    /** @return resource */
+    private function openPrivateFile(string $path, string $error): mixed
+    {
+        $previousUmask = umask(0077);
+        try { $stream = fopen($path, 'xb'); }
+        finally { umask($previousUmask); }
+        if ($stream === false || ! chmod($path, 0600)) {
+            if (is_resource($stream)) fclose($stream);
+            @unlink($path);
+            throw new RuntimeException($error);
+        }
+        return $stream;
     }
 
     private function validTarChecksum(string $header): bool
