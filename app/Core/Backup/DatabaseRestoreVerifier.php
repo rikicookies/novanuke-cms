@@ -10,7 +10,10 @@ use Throwable;
 
 final class DatabaseRestoreVerifier
 {
-    public function __construct(private readonly PDO $database)
+    public function __construct(
+        private readonly PDO $database,
+        private readonly int $maxStatementBytes = DatabaseBackupStatementReader::DEFAULT_MAX_STATEMENT_BYTES,
+    )
     {
     }
 
@@ -25,13 +28,12 @@ final class DatabaseRestoreVerifier
             throw new RuntimeException('Disposable restore database must be empty before verification.');
         }
 
-        $sql = file_get_contents($sqlPath);
-        if (! is_string($sql) || $sql === '') throw new RuntimeException('Database backup SQL cannot be read.');
-        $statements = $this->splitStatements($sql);
-        if ($statements === []) throw new RuntimeException('Database backup contains no executable SQL.');
-
+        $statementCount = 0;
         try {
-            foreach ($statements as $statement) $this->database->exec($statement);
+            foreach ((new DatabaseBackupStatementReader($this->maxStatementBytes))->read($sqlPath) as $statement) {
+                $this->database->exec($statement);
+                $statementCount++;
+            }
             $tables = (int) $this->database->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type='BASE TABLE'")->fetchColumn();
             if ($tables < 1) throw new RuntimeException('Restored database contains no tables.');
             $hasMigrations = (int) $this->database->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name='migrations'")->fetchColumn();
@@ -42,58 +44,12 @@ final class DatabaseRestoreVerifier
                 $identifier = '`' . str_replace('`', '``', (string) $table) . '`';
                 $rowCounts[(string) $table] = (int) $this->database->query("SELECT COUNT(*) FROM {$identifier}")->fetchColumn();
             }
-            return ['statements' => count($statements), 'tables' => $tables, 'migrations' => $migrations, 'row_counts' => $rowCounts];
+            return ['statements' => $statementCount, 'tables' => $tables, 'migrations' => $migrations, 'row_counts' => $rowCounts];
         } catch (Throwable $error) {
             throw new RuntimeException('Disposable SQL restore failed: ' . $error->getMessage(), 0, $error);
         } finally {
             $this->emptyDatabase();
         }
-    }
-
-    /** @return list<string> */
-    private function splitStatements(string $sql): array
-    {
-        $statements = [];
-        $buffer = '';
-        $quote = null;
-        $escaped = false;
-        $length = strlen($sql);
-        for ($i = 0; $i < $length; $i++) {
-            $char = $sql[$i];
-            if ($quote !== null) {
-                $buffer .= $char;
-                if ($escaped) { $escaped = false; continue; }
-                if ($char === '\\' && $quote !== '`') { $escaped = true; continue; }
-                if ($char === $quote) {
-                    if ($i + 1 < $length && $sql[$i + 1] === $quote && $quote !== '`') {
-                        $buffer .= $sql[++$i];
-                        continue;
-                    }
-                    $quote = null;
-                }
-                continue;
-            }
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-                $buffer .= $char;
-                continue;
-            }
-            if ($char === '-' && $i + 1 < $length && $sql[$i + 1] === '-' && ($i + 2 >= $length || ctype_space($sql[$i + 2]))) {
-                while ($i < $length && $sql[$i] !== "\n") $i++;
-                $buffer .= "\n";
-                continue;
-            }
-            if ($char === ';') {
-                $statement = trim($buffer);
-                if ($statement !== '') $statements[] = $statement;
-                $buffer = '';
-                continue;
-            }
-            $buffer .= $char;
-        }
-        if ($quote !== null) throw new RuntimeException('Database backup contains an unterminated quoted value.');
-        if (trim($buffer) !== '') throw new RuntimeException('Database backup contains a trailing unterminated SQL statement.');
-        return $statements;
     }
 
     private function emptyDatabase(): void

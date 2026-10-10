@@ -86,6 +86,12 @@ NovaNuke does not create a restore database automatically. Create/select an empt
 
 After recovery, run `php bin/cms migrate:status` and installed-site checks using the application release matching the backup before exposing the restored site.
 
+### SQL restore streaming boundary
+
+The disposable SQL verifier reads the backup incrementally and executes one bounded statement at a time. It never calls a shell SQL client or loads the complete artifact into PHP memory. The default maximum statement size is 8 MiB; a statement over that limit, a truncated quote/escape, an unterminated statement, or unsupported syntax fails closed. The verifier accepts only the NovaNuke-generated format: `--` metadata comments, `SET NAMES utf8mb4`, `SET FOREIGN_KEY_CHECKS`, quoted `DROP TABLE IF EXISTS`, `SHOW CREATE TABLE` output, and quoted one-row `INSERT` statements. Semicolons inside quoted string or identifier literals are preserved and do not terminate a statement.
+
+Arbitrary external SQL dumps are unsupported. This is intentionally not a generic MySQL parser: it does not accept `DELIMITER`, stored programs, multi-row external dump syntax, client commands, or unrelated DDL/DML. The generated format is intended for the MySQL 8+ or compatible MariaDB environments documented by this release. The import target remains an explicitly confirmed, empty `novanuke_test_[a-f0-9]{16}` database; it is never the active application database. Failed imports clean only tables created in that disposable target. MySQL DDL is not promised to roll back atomically.
+
 ## Portable recovery inventory
 
 Manifest-backed sets created by the current release include `recovery_inventory.schema_version = 2`. It is an additive inventory associated with the existing SQL/TAR pair, not a replacement archive format. It identifies the backup-set ID, runtime and database compatibility, Composer lock digest, detected module/theme state, migration summary, artifact hashes/sizes, safe relative included/excluded roots and operator-supplied migration inputs.

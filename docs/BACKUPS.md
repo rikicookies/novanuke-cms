@@ -80,6 +80,14 @@ For manual acceptance, create an empty database, import the SQL file with MySQL/
 
 The built-in exporter is intentionally portable for shared hosting. Large sites may prefer the provider's snapshot system or `mysqldump` because those tools scale better and can coordinate database locking options.
 
+### SQL format and bounded restore
+
+NovaNuke's disposable restore uses a format-specific streaming reader. It accepts the generated metadata comments, `SET NAMES utf8mb4`, foreign-key toggle statements, quoted table drops, the exact `SHOW CREATE TABLE` table definitions, and quoted single-row `INSERT` statements produced by `DatabaseBackup`. The reader tracks single/double/backtick quoting, backslash escapes, doubled quote characters, multiline definitions and semicolons inside literals; a semicolon is a terminator only outside those states.
+
+The default maximum statement size is 8 MiB. Memory use is bounded by that one statement plus a small input buffer, independent of the total SQL file size. Truncated quotes or escapes, trailing unterminated statements, oversized statements and unsupported statements are rejected before that statement is executed where possible; any failure prevents a success result and the disposable verifier cleans its target. No shell SQL execution or credential interpolation is used.
+
+External `mysqldump` or arbitrary SQL files are not accepted because they may use client directives, stored programs, custom delimiters, multi-row syntax or other grammar outside NovaNuke's controlled format. This importer targets MySQL 8+ or compatible MariaDB as documented for the release. It does not provide atomic rollback for MySQL DDL, and it is not a live migration tool.
+
 ## Portable export bundle and Admin download
 
 A verified manifest-backed set can be exported without changing its SQL/TAR artifacts:
