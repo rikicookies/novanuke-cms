@@ -13,6 +13,7 @@ use NovaNuke\Core\Backup\BackupRecoveryCheck;
 use NovaNuke\Core\Backup\BackupSetId;
 use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\BackupSetStatus;
+use NovaNuke\Core\Backup\PortableRecoveryReadiness;
 use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
@@ -260,6 +261,31 @@ if ($command === 'backup:restore-files') {
         exit(0);
     }catch(Throwable $error){
         fwrite(STDERR,"File restore failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'backup:readiness') {
+    $arguments = array_slice($argv, 2);
+    $manifests = array_values(array_filter($arguments, static fn (string $argument): bool => ! str_starts_with($argument, '--passphrase-file=')));
+    if (count($manifests) > 1 || count($arguments) > 2) {
+        fwrite(STDERR, "Usage: php bin/cms backup:readiness [MANIFEST] [--passphrase-file=PATH]\n");
+        exit(2);
+    }
+    try {
+        $manifest = $manifests[0] ?? null;
+        if ($manifest === null) {
+            $paths = glob($rootPath . '/storage/private/backups/set-*/manifest.json') ?: [];
+            rsort($paths, SORT_STRING);
+            $manifest = $paths[0] ?? null;
+        }
+        if (! is_string($manifest) || $manifest === '') throw new RuntimeException('No manifest-backed backup set was found.');
+        $verified = $application->container()->get(BackupVerifier::class)->verifyManifest($manifest, false, backupPassphraseArgument($arguments));
+        $result = (new PortableRecoveryReadiness())->evaluate($verified['manifest'], true, false);
+        fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
+        exit($result['portable'] ? 0 : 1);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Backup readiness failed: {$error->getMessage()}\n");
         exit(1);
     }
 }

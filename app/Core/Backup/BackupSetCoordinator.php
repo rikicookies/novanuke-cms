@@ -100,6 +100,12 @@ final class BackupSetCoordinator
                 'excluded' => ['.env', 'vendor', '.git', 'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private/backups'],
                 'warnings' => $database['snapshot_consistent'] ? [] : ['Database contains non-transactional tables; cross-table snapshot consistency is not guaranteed.'],
             ];
+            $manifest['recovery_inventory'] = (new PortableRecoveryInventory($this->database, $this->rootPath))->build(
+                $setId,
+                $manifest['completed_at'],
+                $database,
+                $manifest['components'],
+            );
             $encoded = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
             if (file_put_contents($manifestPath . '.part', $encoded, LOCK_EX) !== strlen($encoded)) {
                 throw new RuntimeException('Unable to write backup-set manifest.');

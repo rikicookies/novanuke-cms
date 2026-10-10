@@ -10,6 +10,10 @@ php bin/cms backup:create
 
 `backup:create` is the preferred workflow for RC/stable acceptance. It stages SQL, files and `manifest.json` under an `.incomplete-set-...` directory, verifies both artifacts, and only then atomically publishes `storage/private/backups/set-.../`. The external manifest is the commit record: a directory without a valid complete manifest is not a recovery set.
 
+Newly-created sets also contain an additive `recovery_inventory` object with schema version 2. The top-level backup `format` remains version 1 for compatibility. The inventory records the Core/PHP/database runtime, required extension availability, Composer lock digest, installed module/theme metadata, active theme, migration summary, artifact names/sizes/SHA-256 values, included and excluded relative roots, document-root requirements and manual migration inputs. It never records `.env` values, credentials, APP_KEY, passphrases, absolute private paths or exception traces.
+
+The inventory is metadata, not a signature. A verified SHA-256 or authenticated encrypted artifact proves integrity/authentication of that artifact; it does not prove external provenance if an attacker replaces the complete set. No current manifest is cryptographically signed. `php bin/cms backup:readiness [MANIFEST] [--passphrase-file=PATH]` performs a non-destructive compatibility/readiness evaluation after normal verification. Legacy manifests remain verifiable but are reported as legacy and never as fully portable.
+
 The older individual commands remain available for operational use:
 
 ```bash
@@ -31,6 +35,12 @@ Database backup does not include:
 The file half of a matched set is created automatically by `backup:create`. `backup:files` remains available when a standalone archive is intentionally needed. It creates a private TAR archive containing `modules/`, `themes/`, `public/uploads/`, `storage/private/avatars/` and `storage/private/downloads/`. It never follows symbolic links and does not include `.env`, database data, logs, sessions, caches or other backups. `NOVANUKE-BACKUP.json` inside the archive records each path, byte size and SHA-256 digest. The command also prints the archive SHA-256 so it can be checked after moving the file off-server.
 
 The archive can contain executable module code and private user files. Treat it as sensitive, keep it outside `public/`, encrypt off-server copies and restore only code from a trusted backup. Save `.env` separately through a secure channel.
+
+### Portability boundaries
+
+The file archive includes `modules/`, `themes/`, `public/uploads/`, `storage/private/avatars/`, `storage/private/downloads/` and `storage/private/wiki/`. It excludes the application Core, `vendor/`, `.env`, `storage/installed.lock`, caches, logs, sessions, generated `public/assets/` and the backup directory itself. Obtain a compatible Core release, dependencies and runtime secrets separately. The SQL artifact contains the database tables and rows, including users, roles, permissions, settings and module content; it must only be imported into an empty compatible database during recovery.
+
+For hosting migration, prepare the new database and `.env`, point the document root to `public/`, install compatible dependencies, restore only into empty staging locations, run migration/release checks, configure DNS/TLS/mail/cron and invalidate old sessions before switching traffic. A verified backup is not proof that a disposable recovery has been completed, and the current readiness result remains conservative until such evidence exists.
 
 ## Verify the backup pair
 

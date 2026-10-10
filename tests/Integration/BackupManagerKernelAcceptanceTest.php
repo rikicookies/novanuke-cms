@@ -84,16 +84,41 @@ $pdo = new PDO($argv[2], $argv[3], $argv[4], [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
-$app = \NovaNuke\Core\Application::create($argv[5]);
-$app->container()->instance(PDO::class, $pdo);
-$session = new \NovaNuke\Core\Security\SessionManager('novanuke_kernel_acceptance_' . bin2hex(random_bytes(3)), false);
-$app->container()->instance(\NovaNuke\Core\Security\SessionManager::class, $session);
-$app->container()->instance(\NovaNuke\Core\Backup\BackupSetStatus::class, new \NovaNuke\Core\Backup\BackupSetStatus($argv[6]));
-$_SESSION = ['_auth_user_id' => (int) $argv[7], '_auth_version' => 1];
-$session->put('_auth_user_id', (int) $argv[7]);
-$session->put('_auth_version', 1);
-$response = $app->kernel()->handle(new \NovaNuke\Core\Http\Request('GET', '/admin/backups'));
-echo $response->status(), PHP_EOL, base64_encode($response->content());
+$applicationRoot = $argv[5];
+$installationLock = $applicationRoot . '/storage/installed.lock';
+$createdInstallationLock = false;
+
+// A clean CI checkout does not contain the ignored installation marker. The
+// real application therefore boots in installer mode and /admin/backups is
+// correctly absent. Make this kernel fixture an installed application for the
+// duration of the child process without mutating the repository permanently.
+if (! is_file($installationLock)) {
+    if (! is_dir(dirname($installationLock))) {
+        mkdir(dirname($installationLock), 0700, true);
+    }
+    file_put_contents($installationLock, json_encode([
+        'installed_at' => gmdate(DATE_ATOM),
+        'version' => \NovaNuke\Core\Application::VERSION,
+    ], JSON_THROW_ON_ERROR));
+    $createdInstallationLock = true;
+}
+
+try {
+    $app = \NovaNuke\Core\Application::create($applicationRoot);
+    $app->container()->instance(PDO::class, $pdo);
+    $session = new \NovaNuke\Core\Security\SessionManager('novanuke_kernel_acceptance_' . bin2hex(random_bytes(3)), false);
+    $app->container()->instance(\NovaNuke\Core\Security\SessionManager::class, $session);
+    $app->container()->instance(\NovaNuke\Core\Backup\BackupSetStatus::class, new \NovaNuke\Core\Backup\BackupSetStatus($argv[6]));
+    $_SESSION = ['_auth_user_id' => (int) $argv[7], '_auth_version' => 1];
+    $session->put('_auth_user_id', (int) $argv[7]);
+    $session->put('_auth_version', 1);
+    $response = $app->kernel()->handle(new \NovaNuke\Core\Http\Request('GET', '/admin/backups'));
+    echo $response->status(), PHP_EOL, base64_encode($response->content());
+} finally {
+    if ($createdInstallationLock) {
+        @unlink($installationLock);
+    }
+}
 PHP
 ;
         file_put_contents($script, $scriptBody);

@@ -45,6 +45,22 @@ final class BackupVerifier
         try { $manifest = json_decode($raw, true, 32, JSON_THROW_ON_ERROR); }
         catch (Throwable $error) { throw new RuntimeException('Backup-set manifest JSON is invalid.', 0, $error); }
         if (! is_array($manifest) || ($manifest['format'] ?? null) !== 1) throw new RuntimeException('Backup-set manifest format is unsupported.');
+        if (array_key_exists('recovery_inventory', $manifest)) {
+            if (! is_array($manifest['recovery_inventory'])) throw new RuntimeException('Backup-set recovery inventory is invalid.');
+            PortableRecoveryInventory::validate($manifest['recovery_inventory']);
+            if (($manifest['recovery_inventory']['backup_set_id'] ?? null) !== ($manifest['backup_set_id'] ?? null)) throw new RuntimeException('Recovery inventory backup-set ID does not match.');
+            foreach (['database', 'files'] as $type) {
+                $inventoryArtifact = $manifest['recovery_inventory']['artifacts'][$type] ?? null;
+                $component = $manifest['components'][$type] ?? null;
+                if (! is_array($inventoryArtifact) || ! is_array($component)
+                    || $inventoryArtifact['name'] !== ($component['name'] ?? null)
+                    || $inventoryArtifact['bytes'] !== ($component['bytes'] ?? null)
+                    || $inventoryArtifact['sha256'] !== ($component['sha256'] ?? null)
+                    || $inventoryArtifact['encrypted'] !== (($component['encrypted'] ?? false) === true)) {
+                    throw new RuntimeException("Backup-set {$type} inventory identity does not match its component.");
+                }
+            }
+        }
         $cmsVersion = (string) ($manifest['cms_version'] ?? '');
         if (preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/', $cmsVersion) !== 1) throw new RuntimeException('Backup-set CMS version is invalid.');
         if (explode('.', $cmsVersion, 2)[0] !== explode('.', Version::CURRENT, 2)[0]) throw new RuntimeException('Backup set is incompatible with this CMS major version.');

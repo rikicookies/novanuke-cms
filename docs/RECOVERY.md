@@ -85,3 +85,19 @@ The restore command verifies the TAR manifest/checksums before extraction, rejec
 NovaNuke does not create a restore database automatically. Create/select an empty disposable database with the database server's normal administration tooling. Either configure the three `NOVANUKE_BACKUP_VERIFY_*` values and run `backup:restore-check`, or import the verified SQL manually and record the result. If automated credentials are absent, release acceptance remains `MANUAL REQUIRED / NOT VERIFIED` until that manual evidence exists.
 
 After recovery, run `php bin/cms migrate:status` and installed-site checks using the application release matching the backup before exposing the restored site.
+
+## Portable recovery inventory
+
+Manifest-backed sets created by the current release include `recovery_inventory.schema_version = 2`. It is an additive inventory associated with the existing SQL/TAR pair, not a replacement archive format. It identifies the backup-set ID, runtime and database compatibility, Composer lock digest, detected module/theme state, migration summary, artifact hashes/sizes, safe relative included/excluded roots and operator-supplied migration inputs.
+
+Run the non-destructive readiness evaluation after verifying the set:
+
+```bash
+php bin/cms backup:readiness storage/private/backups/set-.../manifest.json
+```
+
+For encrypted sets, add `--passphrase-file=/protected/operator-secret`. The passphrase is never written to the inventory. The command can report version, extension, module, theme, migration, snapshot or manual-configuration issues; it exits non-zero unless the conservative conditions are satisfied. It does not import SQL, extract files or change the database. It also requires an explicit recovery-test result, so it will not claim that recovery has been tested merely because hashes verify.
+
+Older manifests without `recovery_inventory` remain supported by `backup:verify`, `backup:status` and `backup:restore-check`. They are legacy manifests with less portability metadata and must be treated as requiring manual inventory. No old manifest is rewritten automatically.
+
+The inventory deliberately excludes `.env`, credentials, APP_KEY, passphrases, absolute server paths, sessions, logs and exception traces. The operator must separately provide a compatible Core release/vendor tree, destination database credentials, new runtime secrets, document-root/rewrite setup, site URL/DNS/TLS/mail/cron configuration and any encryption passphrase. `manifest_signed=false` means external authenticity has not been established; integrity and provenance are separate claims.
