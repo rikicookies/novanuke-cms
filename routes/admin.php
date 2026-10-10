@@ -215,6 +215,7 @@ $backupManagerController = static fn (Container $container): BackupManagerContro
 $router->get('/admin/backups', static fn (Request $request, Container $container): Response => $backupManagerController($container)->index());
 $router->post('/admin/backups/create', static fn (Request $request, Container $container): Response => $backupManagerController($container)->create($request));
 $router->post('/admin/backups/{id}/verify', static fn (Request $request, Container $container): Response => $backupManagerController($container)->verify($request));
+$router->post('/admin/backups/{id}/export', static fn (Request $request, Container $container): Response => $backupManagerController($container)->export($request));
 
 $systemController = static fn (Container $container): SystemInfoController => new SystemInfoController(
     $container->get(AuthManager::class),

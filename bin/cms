@@ -13,6 +13,7 @@ use NovaNuke\Core\Backup\BackupRecoveryCheck;
 use NovaNuke\Core\Backup\BackupSetId;
 use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\BackupSetStatus;
+use NovaNuke\Core\Backup\BackupExportBundle;
 use NovaNuke\Core\Backup\PortableRecoveryReadiness;
 use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
@@ -208,6 +209,31 @@ if ($command === 'backup:verify') {
         fwrite($result['passed'] ? STDOUT : STDERR, ($result['passed'] ? '[PASS] ' : '[FAIL] ') . ucfirst($result['type']) . " backup{$file}: {$result['detail']}\n");
     }
     exit($passed ? 0 : 1);
+}
+
+if ($command === 'backup:export') {
+    $arguments = array_slice($argv, 2);
+    $id = null; $destination = null;
+    foreach ($arguments as $argument) {
+        if (str_starts_with($argument, '--destination=')) $destination = substr($argument, 14);
+        elseif ($id === null && ! str_starts_with($argument, '--')) $id = $argument;
+        else { fwrite(STDERR, "Usage: php bin/cms backup:export BACKUP_SET_ID --destination=PATH\n"); exit(2); }
+    }
+    if (! is_string($id) || ! is_string($destination) || $id === '' || $destination === '' || count($arguments) !== 2) { fwrite(STDERR, "Usage: php bin/cms backup:export BACKUP_SET_ID --destination=PATH\n"); exit(2); }
+    try {
+        $result = (new BackupExportBundle($rootPath . '/storage/private/backups'))->create($id, $destination);
+        fwrite(STDOUT, "Export bundle created: {$result['path']}\nBackup set: {$result['backup_set_id']}\nVerification: {$result['verification']}\n");
+        exit(0);
+    } catch (Throwable $error) { fwrite(STDERR, "Backup export failed: {$error->getMessage()}\n"); exit(1); }
+}
+
+if ($command === 'backup:export-verify') {
+    if (count($argv) !== 3) { fwrite(STDERR, "Usage: php bin/cms backup:export-verify PATH\n"); exit(2); }
+    try {
+        $result = (new BackupExportBundle($rootPath . '/storage/private/backups'))->verify($argv[2]);
+        fwrite(STDOUT, "[PASS] Export bundle {$result['backup_set_id']} verified.\nVerification: {$result['verification']}\n");
+        exit(0);
+    } catch (Throwable $error) { fwrite(STDERR, "Backup export verification failed: {$error->getMessage()}\n"); exit(1); }
 }
 
 if ($command === 'backup:status') {

@@ -7,6 +7,7 @@ namespace NovaNuke\Tests\Integration;
 use NovaNuke\Admin\BackupManagerController;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Backup\BackupOperationLock;
+use NovaNuke\Core\Backup\BackupExportBundle;
 use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\BackupSetStatus;
 use NovaNuke\Core\Backup\BackupVerifier;
@@ -102,6 +103,36 @@ final class BackupManagerAcceptanceTest extends MySqlIntegrationTestCase
         $invalid = $this->request('POST', '/admin/backups/../../etc/passwd/verify', ['_token' => $this->csrf->token()])->withAttributes(['id' => '../../etc/passwd']);
         self::assertSame(404, $this->controller->verify($invalid)->status());
         self::assertStringNotContainsString($this->root, $this->controller->index()->content());
+    }
+
+    public function testExportStreamsVerifiedBundleAndCleansTemporaryFile(): void
+    {
+        $admin = $this->createUser('backup-export'); $this->grantSuperAdministrator($admin); $this->loginAs($admin);
+        $set = $this->coordinator->create();
+        $request = $this->request('POST', '/admin/backups/' . $set['backup_set_id'] . '/export', ['_token' => $this->csrf->token()])->withAttributes(['id' => $set['backup_set_id']]);
+        $response = $this->controller->export($request);
+        self::assertSame(200, $response->status());
+        self::assertSame('application/x-tar', $response->header('Content-Type'));
+        self::assertStringContainsString('attachment;', (string) $response->header('Content-Disposition'));
+        self::assertSame('private, no-store', $response->header('Cache-Control'));
+        ob_start(); $response->send(); $body = (string) ob_get_clean();
+        $captured = $this->root . '/captured-export.tar';
+        file_put_contents($captured, $body);
+        self::assertSame($set['backup_set_id'], (new BackupExportBundle($this->backupDirectory))->verify($captured)['backup_set_id']);
+        @unlink($captured);
+        self::assertSame([], glob($this->backupDirectory . '/.export-*.tar', GLOB_NOSORT) ?: []);
+    }
+
+    public function testExportRequiresPermissionCsrfAndStrictId(): void
+    {
+        $set = $this->coordinator->create();
+        $request = $this->request('POST', '/admin/backups/' . $set['backup_set_id'] . '/export', ['_token' => $this->csrf->token()])->withAttributes(['id' => $set['backup_set_id']]);
+        self::assertSame(302, $this->controller->export($request)->status());
+        $member = $this->createUser('backup-export-member'); $this->loginAs($member);
+        self::assertSame(403, $this->controller->export($request)->status());
+        $admin = $this->createUser('backup-export-csrf'); $this->grantSuperAdministrator($admin); $this->loginAs($admin);
+        self::assertSame(419, $this->controller->export($this->request('POST', '/admin/backups/x/export', ['_token' => 'invalid'])->withAttributes(['id' => 'x']))->status());
+        self::assertSame(404, $this->controller->export($this->request('POST', '/admin/backups/x/export', ['_token' => $this->csrf->token()])->withAttributes(['id' => '../x']))->status());
     }
 
     public function testCorruptSetFailsVerificationWithoutExposingPaths(): void

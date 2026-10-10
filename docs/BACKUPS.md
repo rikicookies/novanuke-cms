@@ -79,3 +79,18 @@ If those credentials are unavailable, `backup:restore-check` and `rc:deployment`
 For manual acceptance, create an empty database, import the SQL file with MySQL/MariaDB tools or phpMyAdmin, extract the matching file archive over a clean copy of the same NovaNuke release, then configure `.env`. Compare restored files with the manifest before exposing the site. Test restoration periodically on a non-production system. A backup that has never been restored is not yet proven usable.
 
 The built-in exporter is intentionally portable for shared hosting. Large sites may prefer the provider's snapshot system or `mysqldump` because those tools scale better and can coordinate database locking options.
+
+## Portable export bundle and Admin download
+
+A verified manifest-backed set can be exported without changing its SQL/TAR artifacts:
+
+```bash
+php bin/cms backup:export SET_ID --destination=/protected/path/novanuke-backup-SET_ID.tar
+php bin/cms backup:export-verify /protected/path/novanuke-backup-SET_ID.tar
+```
+
+The bundle is a streaming TAR containing `export.json`, the original `manifest.json`, the original database artifact and the original files artifact. It preserves ciphertext byte-for-byte for encrypted sets. `backup:export-verify` checks the descriptor, safe relative names, byte sizes, SHA-256 values and the embedded manifest/artifact relationship without importing or extracting into the application. For plaintext artifacts it performs the existing SQL/TAR verification. For encrypted artifacts it verifies the ciphertext and envelope metadata; authenticated decryption still requires the original external passphrase.
+
+Super-administrators with `backup.manage` can use the Export action in Admin Backup Manager. The action is POST-only, CSRF-protected, resolves only a strict server-side backup-set ID, verifies the set before streaming and removes its private temporary bundle after the response. No public URL, signed link, browser passphrase or arbitrary filesystem path is accepted. Plaintext exports contain sensitive database and file data; encrypted exports preserve ciphertext but do not recover the passphrase.
+
+The export does not include `.env`, vendor dependencies, Core source, generated caches/assets, runtime secrets, logs or sessions beyond whatever was already present in the verified backup artifacts. Store the resulting file outside the host, preferably encrypted at rest, and verify it again after transfer. Large sets remain subject to PHP request, disk and hosting limits; CLI/SFTP or provider snapshots may be more appropriate for very large installations. This workflow does not perform live restore.

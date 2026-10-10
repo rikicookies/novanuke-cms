@@ -36,8 +36,20 @@ final class BackupVerifier
         return [$database, $files, $this->verifyPair($database, $files)];
     }
 
+    /**
+     * Verify a set sufficiently for immutable export without decrypting it.
+     * Encrypted artifacts receive structural/envelope and ciphertext-hash
+     * validation; AEAD authentication still requires the external passphrase.
+     *
+     * @return array<string,mixed>
+     */
+    public function verifyManifestForExport(string $manifestPath): array
+    {
+        return $this->verifyManifest($manifestPath, false, null, true);
+    }
+
     /** @return array<string,mixed> */
-    public function verifyManifest(string $manifestPath, bool $allowStaging = false, ?string $passphrase = null): array
+    public function verifyManifest(string $manifestPath, bool $allowStaging = false, ?string $passphrase = null, bool $allowEncryptedCiphertext = false): array
     {
         $this->assertRegularFile($manifestPath);
         $raw = file_get_contents($manifestPath);
@@ -95,17 +107,27 @@ final class BackupVerifier
                 throw new RuntimeException("Backup-set {$type} artifact size or checksum does not match.");
             }
             $temporary = null;
+            $ciphertextOnly = false;
             if (($component['encrypted'] ?? false) === true) {
-                if ($passphrase === null) throw new RuntimeException('An encryption passphrase is required to verify this backup set.');
-                $temporary = (new BackupEncryption())->decryptToTemp($path, dirname($manifestPath), $passphrase);
-                $path = $temporary['path'];
+                if ($passphrase === null) {
+                    if (! $allowEncryptedCiphertext) throw new RuntimeException('An encryption passphrase is required to verify this backup set.');
+                    $metadata = (new BackupEncryption())->metadata($path);
+                    if (! hash_equals((string) ($component['plaintext_sha256'] ?? ''), (string) $metadata['sha256'])) throw new RuntimeException("Backup-set {$type} encrypted metadata does not match.");
+                    $actual = ['bytes' => $metadata['bytes'], 'sha256' => $metadata['sha256'], 'backup_set' => $setId];
+                    $ciphertextOnly = true;
+                } else {
+                    $temporary = (new BackupEncryption())->decryptToTemp($path, dirname($manifestPath), $passphrase);
+                    $path = $temporary['path'];
+                }
             }
-            try {
-                $actual = $type === 'database' ? $this->verifyDatabase($path) : $this->verifyFileArchive($path);
-            } finally {
-                if ($temporary !== null) @unlink($temporary['path']);
+            if (! $ciphertextOnly) {
+                try {
+                    $actual = $type === 'database' ? $this->verifyDatabase($path) : $this->verifyFileArchive($path);
+                } finally {
+                    if ($temporary !== null) @unlink($temporary['path']);
+                }
             }
-            if (($component['encrypted'] ?? false) === true) {
+            if (($component['encrypted'] ?? false) === true && ! $ciphertextOnly) {
                 if (($component['plaintext_bytes'] ?? null) !== $actual['bytes'] || ! hash_equals((string) ($component['plaintext_sha256'] ?? ''), $actual['sha256'])) {
                     throw new RuntimeException("Backup-set {$type} plaintext checksum does not match.");
                 }

@@ -101,3 +101,18 @@ For encrypted sets, add `--passphrase-file=/protected/operator-secret`. The pass
 Older manifests without `recovery_inventory` remain supported by `backup:verify`, `backup:status` and `backup:restore-check`. They are legacy manifests with less portability metadata and must be treated as requiring manual inventory. No old manifest is rewritten automatically.
 
 The inventory deliberately excludes `.env`, credentials, APP_KEY, passphrases, absolute server paths, sessions, logs and exception traces. The operator must separately provide a compatible Core release/vendor tree, destination database credentials, new runtime secrets, document-root/rewrite setup, site URL/DNS/TLS/mail/cron configuration and any encryption passphrase. `manifest_signed=false` means external authenticity has not been established; integrity and provenance are separate claims.
+
+## Portable export verification
+
+To move a complete existing backup set off the hosting provider, create a streaming bundle from the verified private set:
+
+```bash
+php bin/cms backup:export SET_ID --destination=/protected/path/novanuke-backup-SET_ID.tar
+php bin/cms backup:export-verify /protected/path/novanuke-backup-SET_ID.tar
+```
+
+The bundle contains only the existing manifest and the original SQL/TAR bytes plus a small descriptor. It does not restore data, run SQL, execute module/theme code or change the source set. `backup:export-verify` is read-only and validates relative paths, inventory, sizes, hashes and manifest consistency. Encrypted bundles retain ciphertext and require the original passphrase for full authenticated decryption; the export command never asks for that secret.
+
+The Admin Backup Manager offers the same export as an authenticated POST action for users with `backup.manage`. CSRF, strict backup-set IDs, private storage, verification-before-streaming, no-store headers and temporary-file cleanup are enforced. There are no public backup URLs. Plaintext bundles must be treated as containing passwords hashes, private content and executable module/theme files.
+
+On shared hosting, a large bundle may exceed request timeout, disk or bandwidth limits. In that case use the CLI command, SFTP/file manager or a provider snapshot, then run `backup:export-verify` on a separate compatible NovaNuke checkout. Export verification is not a live restore and is not proof of external authenticity.

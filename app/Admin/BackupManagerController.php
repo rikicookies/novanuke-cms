@@ -6,6 +6,7 @@ namespace NovaNuke\Admin;
 
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Backup\BackupOperationLock;
+use NovaNuke\Core\Backup\BackupExportBundle;
 use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\BackupSetId;
 use NovaNuke\Core\Backup\BackupSetStatus;
@@ -83,6 +84,37 @@ final class BackupManagerController
             $this->session->put('backup.message', $this->translate('backup.message.verified', 'Backup set verified.'));
             return Response::redirect('/admin/backups', 303);
         } catch (Throwable $error) {
+            return $this->view(null, $this->safeError($error), 422);
+        }
+    }
+
+    public function export(Request $request): Response
+    {
+        $guard = $this->guard();
+        if ($guard !== null) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return $this->error('admin.error.csrf', 'Invalid or expired CSRF token.', 419);
+        try { $id = BackupSetId::normalize((string) $request->attribute('id')); }
+        catch (Throwable) { return $this->error('backup.error.invalid_id', 'Invalid backup set.', 404); }
+
+        $destination = rtrim($this->backupDirectory, '/\\') . DIRECTORY_SEPARATOR . '.export-' . bin2hex(random_bytes(12)) . '.tar';
+        try {
+            $result = (new BackupExportBundle($this->backupDirectory))->create($id, $destination);
+            $actor = $this->auth->user();
+            $this->activity->log((int) $actor['id'], 'backup.export', 'backup-set', $id, ['encrypted' => $result['encrypted']], $request->ip());
+            $filename = 'novanuke-backup-' . $id . '.tar';
+            $size = filesize($destination);
+            if ($size === false) throw new RuntimeException('Export bundle is unavailable.');
+            return new Response(static function () use ($destination): void {
+                try { readfile($destination); } finally { @unlink($destination); }
+            }, 200, [
+                'Content-Type' => 'application/x-tar',
+                'Content-Length' => (string) $size,
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store',
+            ]);
+        } catch (Throwable $error) {
+            @unlink($destination);
             return $this->view(null, $this->safeError($error), 422);
         }
     }
