@@ -49,6 +49,7 @@ final class AdminNavigationManager
             $this->item('admin.navigation.settings', '/admin/settings', 'settings.manage', 'settings', 'system'),
             $this->item('admin.navigation.registration', '/admin/settings/users', 'settings.manage', 'user-settings', 'system'),
             $this->item('admin.navigation.logs', '/admin/logs', 'logs.view', 'logs', 'system'),
+            $this->item('admin.navigation.backups', '/admin/backups', 'backup.manage', 'backup', 'system'),
             $this->item('admin.navigation.system_information', '/admin/system', 'settings.manage', 'system', 'system'),
         ];
 

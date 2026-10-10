@@ -33,12 +33,16 @@ final class BackupSetStatus
                         'components'=>array_keys($data['components']),
                         'bytes'=>array_sum(array_column($data['components'],'bytes')),
                         'checksums'=>'valid', 'warnings'=>$data['warnings'] ?? [], 'compatibility'=>'compatible',
+                        'encrypted'=>((bool)($data['components']['database']['encrypted']??false)||(bool)($data['components']['files']['encrypted']??false)),
                         'detail'=>'Manifest and both components verified.',
                     ];
                 } catch (Throwable $error) {
-                    $incompatible=str_contains(strtolower($error->getMessage()),'incompatible')||str_contains(strtolower($error->getMessage()),'unsupported');
-                    $record['status']=$incompatible?'incompatible':'corrupt';
-                    $record['detail']=$error->getMessage();
+                    $message = strtolower($error->getMessage());
+                    $incompatible=str_contains($message,'incompatible')||str_contains($message,'unsupported');
+                    $secret=str_contains($message,'passphrase is required');
+                    $record['status']=$secret?'secret-required':($incompatible?'incompatible':'corrupt');
+                    $record['encrypted']=$secret;
+                    $record['detail']=$secret?'An encryption passphrase is required to verify this backup set.':$error->getMessage();
                 }
             }
             $items[]=$record;

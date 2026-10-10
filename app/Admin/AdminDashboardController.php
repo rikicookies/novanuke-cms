@@ -42,6 +42,7 @@ final class AdminDashboardController
             'web-links.manage', 'private-messages.moderate',
             'roles.view', 'logs.view', 'modules.manage', 'settings.manage', 'themes.manage', 'memberships.manage',
             'blocks.manage', 'menus.manage',
+            'backup.manage',
         ];
         $permissions = [];
         foreach ($permissionNames as $permission) {
@@ -70,6 +71,7 @@ final class AdminDashboardController
             ['label' => 'admin.navigation.themes', 'url' => '/admin/themes', 'permission' => 'themes.manage'],
             ['label' => 'admin.navigation.blocks', 'url' => '/admin/blocks', 'permission' => 'blocks.manage'],
             ['label' => 'admin.navigation.menus', 'url' => '/admin/menus', 'permission' => 'menus.manage'],
+            ['label' => 'admin.navigation.backups', 'url' => '/admin/backups', 'permission' => 'backup.manage'],
         ], static fn (array $link): bool => $permissions[$link['permission']] ?? false));
 
         return Response::html($this->views->render('@admin-core/admin/dashboard.twig', [

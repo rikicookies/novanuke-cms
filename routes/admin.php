@@ -15,6 +15,7 @@ use NovaNuke\Admin\MenusController;
 use NovaNuke\Admin\SystemInfoController;
 use NovaNuke\Admin\AdminDashboardController;
 use NovaNuke\Admin\GeneralSettingsController;
+use NovaNuke\Admin\BackupManagerController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -197,6 +198,23 @@ $logsController = static fn (Container $container): ActivityLogsController => ne
 $router->get('/admin/logs', static fn (Request $request, Container $container): Response =>
     $logsController($container)->index()
 );
+
+$backupManagerController = static fn (Container $container): BackupManagerController => new BackupManagerController(
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(SessionManager::class),
+    $container->get(ViewRenderer::class),
+    $container->get(\NovaNuke\Core\Backup\BackupSetStatus::class),
+    $container->get(\NovaNuke\Core\Backup\BackupSetCoordinator::class),
+    $container->get(\NovaNuke\Core\Backup\BackupVerifier::class),
+    dirname(__DIR__) . '/storage/private/backups',
+    $container->get(\NovaNuke\Core\I18n\Translator::class),
+);
+$router->get('/admin/backups', static fn (Request $request, Container $container): Response => $backupManagerController($container)->index());
+$router->post('/admin/backups/create', static fn (Request $request, Container $container): Response => $backupManagerController($container)->create($request));
+$router->post('/admin/backups/{id}/verify', static fn (Request $request, Container $container): Response => $backupManagerController($container)->verify($request));
 
 $systemController = static fn (Container $container): SystemInfoController => new SystemInfoController(
     $container->get(AuthManager::class),
